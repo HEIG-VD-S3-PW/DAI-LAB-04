@@ -1,9 +1,45 @@
-# Services
 services:
-  backend:
+  backend-prod:
+    profiles: [prod]
     container_name: backend
     build:
-      context: ./src/backend/
+      context: .
+      target: prod
+    labels:
+      #  HTTPS YOUR APP
+      - traefik.enable=true
+      - traefik.http.routers.user-api-backend.rule=Host(`api-heig-dai-pw04.duckdns.org`)
+      - traefik.http.routers.user-api.entrypoints=api
+      - traefik.http.routers.user-api-backend.tls=true
+      - traefik.http.routers.user-api-backend.tls.certresolver=letsencrypt
+      - traefik.http.services.user-api-backend.loadbalancer.server.port=7000
+
+    environment:
+      DB_NAME: bdr
+      DB_USER: bdr
+      DB_SSL: false
+      DB_PORT: 5432
+    ports:
+      - 7000:7000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - traefik_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    secrets:
+      - db_password
+
+  backend-dev:
+    profiles: [dev]
+    container_name: backend
+    build:
+      context: .
+      target: dev
     environment:
       DB_NAME: bdr
       DB_USER: bdr
@@ -16,56 +52,19 @@ services:
         condition: service_healthy
     volumes:
       - type: bind
-        source: ./src/backend/
+        source: ./
         target: /app
     networks:
-      - bdr
+      - traefik_network
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "5"
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl --fail http://localhost:8081/health || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
     secrets:
       - db_password
-  frontend:
-    container_name: frontend
-    build:
-      context: ./src/frontend/
-    develop:
-      watch:
-        - action: sync
-          path: ./src/frontend/
-          target: /app
-          ignore:
-            - node_modules/
-        - action: rebuild
-          path: package.json
-    ports:
-      - 3000:3000
-    # depends_on:
-    #   backend:
-    #     condition: service_healthy
-    # healthcheck:
-    #   test:
-    #     - CMD-SHELL
-    #     - curl --fail http://localhost:3030 || exit 1
-    #   interval: 1m
-    #   timeout: 5s
-    #   retries: 30
-    networks:
-      - bdr
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "5"
-
   db:
+    profiles: [dev, prod]
     container_name: db
     image: postgres
     # set shared memory limit when using docker-compose
@@ -81,9 +80,9 @@ services:
       - db_password
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
-      - ./src/backend/database/db.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./database/db.sql:/docker-entrypoint-initdb.d/create_database.sql
     networks:
-      - bdr
+      - traefik_network
     ports:
       - "5432:5432"
     logging:
@@ -97,9 +96,75 @@ services:
       timeout: 60s
       retries: 5
       start_period: 80s
+  traefik:
+    profiles: [prod]
+    image: traefik:${TRAEFIK_IMAGE_VERSION:-latest}
+    command:
+      ## Global
+      # Uncomment next line when testing
+      # - --log.level=DEBUG
+      - --api.dashboard=${TRAEFIK_ENABLE_DASHBOARD:-false}
+      ## Docker
+      # Use Docker as a provider
+      - --providers.docker=true
+      # Do not expose containers by default
+      - --providers.docker.exposedbydefault=false
+      ## Entrypoints
+      # API
+      - --entrypoints.api="Name:http Address::80"
+      # Define an entrypoint for HTTP on port 80
+      - --entrypoints.http.address=:80
+      # Define an entrypoint for HTTPS on port 443
+      - --entrypoints.https.address=:443
+      # We redirect all HTTP traffic to HTTPS
+      - --entrypoints.http.http.redirections.entrypoint.to=https
+      - --entrypoints.http.http.redirections.entrypoint.scheme=https
+      - --entrypoints.http.http.redirections.entrypoint.permanent=true
+      # We enable TLS for all HTTPS traffic
+      - --entrypoints.https.http.tls=true
+      - --entrypoints.https.http.tls.certresolver=letsencrypt
+      ## Certificates
+      # We add Let's Encrypt as a default certificate resolver
+      # Uncomment next line when testing
+      # - --certificatesResolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+    restart: unless-stopped
+    networks:
+      # Attach the Traefik container to the traefik network
+      - traefik_network
+    ports:
+      # Expose port 80 on the host for all incoming HTTP traffic
+      - 80:80
+      # Expose port 443 on the host for all incoming HTTPS traffic
+      - 443:443
+    volumes:
+      # This is needed for Traefik to be able to listen to the Docker events
+      # It allows Traefik to react almost immediately to changes in the
+      # containers it manages
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # This is needed for Traefik to be able to store the Let's Encrypt certificates
+      - ./letsencrypt:/letsencrypt
+    # Labels can be attached to containers for various customizations.
+    # In this case, the labels are to configure Traefik
+    labels:
+      ## Traefik
+      # Enable Traefik for this container
+      - traefik.enable=true
+      # Help Traefik find this container on the network
+      - traefik.docker.network=traefik_network
+      ## Routers
+      # The entrypoint of this container is HTTPS
+      - traefik.http.routers.traefik.entrypoints=https
+      # This container is accessible with the fully qualified domain name
+      - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME}`)
+      # This is needed to access the Traefik dashboard
+      - traefik.http.routers.traefik.service=api@internal
 
 networks:
-  bdr:
+  traefik_network:
+    name: traefik_network
 volumes:
   postgres-data:
 secrets:
