@@ -2,6 +2,8 @@ package ch.heigvd.bdr.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.util.ArrayList;
+
 public class User {
   private int id;
   private String firstname;
@@ -10,9 +12,6 @@ public class User {
   private UserRole role;
   @JsonIgnore
   private String password;
-
-  public User() {
-  }
 
   public User(int id, String firstname, String lastname, String email, UserRole role) {
     this.id = id;

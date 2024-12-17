@@ -5,21 +5,18 @@ import java.sql.Timestamp;
 public class Task {
   private int id;
   private Timestamp startsAt;
-  private Short progress;
-  private TaskPriority priority;
-  private TaskDeadline deadline;
+  private short progress;
   private String note;
   private String tag;
-  private Boolean isRequired;
-  private Integer requiredTaskId;
+  private TaskPriority priority;
+  private TaskDeadline deadline;
+  private boolean isRequired;
+  private int requiredTaskId;
   private int resultId;
 
-  public Task() {
-  }
-
-  public Task(int id, Timestamp startsAt, Short progress, TaskPriority priority,
+  public Task(int id, Timestamp startsAt, short progress, TaskPriority priority,
       TaskDeadline deadline, String note, String tag,
-      Boolean isRequired, Integer requiredTaskId, int resultId) {
+      boolean isRequired, int requiredTaskId, int resultId) {
     this.id = id;
     this.startsAt = startsAt;
     this.progress = progress;
@@ -49,11 +46,11 @@ public class Task {
     this.startsAt = startsAt;
   }
 
-  public Short getProgress() {
+  public short getProgress() {
     return progress;
   }
 
-  public void setProgress(Short progress) {
+  public void setProgress(short progress) {
     this.progress = progress;
   }
 
@@ -89,19 +86,19 @@ public class Task {
     this.tag = tag;
   }
 
-  public Boolean getIsRequired() {
+  public boolean getIsRequired() {
     return isRequired;
   }
 
-  public void setIsRequired(Boolean isRequired) {
+  public void setIsRequired(boolean isRequired) {
     this.isRequired = isRequired;
   }
 
-  public Integer getRequiredTaskId() {
+  public int getRequiredTaskId() {
     return requiredTaskId;
   }
 
-  public void setRequiredTaskId(Integer requiredTaskId) {
+  public void setRequiredTaskId(int requiredTaskId) {
     this.requiredTaskId = requiredTaskId;
   }
 

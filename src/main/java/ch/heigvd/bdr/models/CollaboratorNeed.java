@@ -3,9 +3,6 @@ package ch.heigvd.bdr.models;
 public class CollaboratorNeed {
   private UserRole type;
 
-  public CollaboratorNeed() {
-  }
-
   public CollaboratorNeed(UserRole type) {
     this.type = type;
   }

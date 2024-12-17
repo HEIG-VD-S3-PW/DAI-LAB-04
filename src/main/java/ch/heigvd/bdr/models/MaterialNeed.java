@@ -3,9 +3,6 @@ package ch.heigvd.bdr.models;
 public class MaterialNeed {
   private Material type;
 
-  public MaterialNeed() {
-  }
-
   public MaterialNeed(Material type) {
     this.type = type;
   }

@@ -5,9 +5,6 @@ public class TaskCollaboratorNeed {
   private UserRole collaboratorNeedType;
   private int quantity;
 
-  public TaskCollaboratorNeed() {
-  }
-
   public TaskCollaboratorNeed(int taskId, UserRole collaboratorNeedType, int quantity) {
     this.taskId = taskId;
     this.collaboratorNeedType = collaboratorNeedType;

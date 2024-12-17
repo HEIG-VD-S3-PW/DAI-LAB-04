@@ -1,5 +1,6 @@
 services:
   backend-prod:
+    image: dai-pw03:latest
     profiles: [prod]
     container_name: backend
     build:
