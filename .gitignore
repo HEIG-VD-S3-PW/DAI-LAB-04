@@ -44,5 +44,5 @@ Thumbs.db
 .settings
 .project
 .secrets
-client-data/
-server-data/
+credentials.txt
+postgres-data

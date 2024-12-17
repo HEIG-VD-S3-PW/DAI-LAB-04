@@ -7,28 +7,28 @@ DROP TABLE IF EXISTS "Task_MaterialNeed";
 DROP TABLE IF EXISTS "MaterialNeed";
 DROP TABLE IF EXISTS "CollaboratorNeed";
 
-DROP TYPE IF EXISTS UserRole;
-DROP TYPE IF EXISTS Material;
+DROP TYPE IF EXISTS "UserRole";
+DROP TYPE IF EXISTS "Material";
 
 DROP TABLE IF EXISTS "Task";
-DROP TYPE IF EXISTS TaskPriority;
-DROP TYPE IF EXISTS TaskDeadLine;
+DROP TYPE IF EXISTS "TaskPriority";
+DROP TYPE IF EXISTS "TaskDeadLine";
 
 DROP TABLE IF EXISTS "Result";
 DROP TABLE IF EXISTS "Goal";
 DROP TABLE IF EXISTS "Project";
 
-CREATE TYPE UserRole AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
 
-CREATE Type Material AS ENUM('LICENSE', 'SERVER', 'DATABASE'); 
+CREATE Type "Material" AS ENUM('LICENSE', 'SERVER', 'DATABASE'); 
 
 CREATE TABLE "MaterialNeed"(
-	type Material NOT NULL,
+	type "Material" NOT NULL,
 	CONSTRAINT PK_MaterialNeed PRIMARY KEY(type)
 );
 
 CREATE TABLE "CollaboratorNeed"(
-	type UserRole NOT NULL,
+	type "UserRole" NOT NULL,
 	CONSTRAINT PK_CollaboratorNeed PRIMARY KEY(type)
 );
 
@@ -38,6 +38,35 @@ CREATE TABLE "Project"(
 	CONSTRAINT PK_Project PRIMARY KEY(id),
 	CONSTRAINT UC_Project_name UNIQUE(name)
 );
+
+CREATE TABLE "User"(
+	id SERIAL,
+	firstname VARCHAR(100) NOT NULL,
+	lastname VARCHAR(100) NOT NULL,
+	email VARCHAR(255) NOT NULL,
+	role "UserRole" DEFAULT 'CONTRIBUTOR',
+	CONSTRAINT PK_User PRIMARY KEY(id),
+	CONSTRAINT UC_User_email UNIQUE(email)
+);
+
+CREATE TABLE "Team" (
+	id SERIAL,
+	name VARCHAR(50) NOT NULL,
+	managerId INT NULL,
+	CONSTRAINT PK_Team PRIMARY KEY(id),
+	CONSTRAINT FK_Team_managerId FOREIGN KEY (managerId) REFERENCES "User"(id) ON DELETE SET NULL ON UPDATE CASCADE,
+	CONSTRAINT UC_Team_name UNIQUE(name)
+);
+
+CREATE TABLE "User_Team" (
+	id SERIAL,
+	userId INT NOT NULL,
+	teamId INT NOT NULL,
+	CONSTRAINT PK_User_Team PRIMARY KEY(id),
+	CONSTRAINT FK_User_Team_userId FOREIGN KEY (userId) REFERENCES "User"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT FK_User_Team_teamId FOREIGN KEY (teamId) REFERENCES "Team"(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE "Goal"(
 	id SERIAL,
 	name VARCHAR(100) NOT NULL,
@@ -63,14 +92,14 @@ CREATE TABLE "Result"(
 	CONSTRAINT CHK_Result_dates CHECK (createdAt < endsAt)
 );
 
-CREATE TYPE TaskPriority AS ENUM ('LOW', 'MEDIUM', 'HIGH');
-CREATE TYPE TaskDeadLine AS ENUM ('3_MONTHS', '1_YEAR', '3_YEARS');
+CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
+CREATE TYPE "TaskDeadLine" AS ENUM ('3_MONTHS', '1_YEAR', '3_YEARS');
 CREATE TABLE "Task"(
 	id SERIAL,
 	startsAt TIMESTAMP NOT NULL,
 	progress SMALLINT CHECK (progress >= 0 AND progress <= 100),
-	priority TaskPriority DEFAULT 'MEDIUM',
-	deadline TaskDeadLine DEFAULT '3_MONTHS',
+	priority "TaskPriority" DEFAULT 'MEDIUM',
+	deadline "TaskDeadLine" DEFAULT '3_MONTHS',
 	note TEXT,
 	tag TEXT,
 	isRequired BOOL DEFAULT FALSE,
@@ -84,7 +113,7 @@ CREATE TABLE "Task"(
 
 CREATE TABLE "Task_CollaboratorNeed" (
 	taskId INT NOT NULL,
-	collaboratorNeedType UserRole NOT NULL,
+	collaboratorNeedType "UserRole" NOT NULL,
 	quantity INT NOT NULL,
 	CONSTRAINT PK_Task_CollaboratorNeed PRIMARY KEY(taskId, collaboratorNeedType),
 	CONSTRAINT FK_Task_CollaboratorNeed_taskId FOREIGN KEY (taskId) REFERENCES "Task"(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -94,7 +123,7 @@ CREATE TABLE "Task_CollaboratorNeed" (
 
 CREATE TABLE "Task_MaterialNeed" (
 	taskId INT NOT NULL,
-	materialNeedType Material NOT NULL,
+	materialNeedType "Material" NOT NULL,
 	quantity INT NOT NULL,
 	CONSTRAINT PK_Task_MaterialNeed PRIMARY KEY(taskId, materialNeedType),
 	CONSTRAINT FK_Task_MaterialNeed_taskId FOREIGN KEY (taskId) REFERENCES "Task"(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -102,33 +131,6 @@ CREATE TABLE "Task_MaterialNeed" (
 	CONSTRAINT CHK_Task_MaterialNeed_quantity CHECK (quantity > 0)
 );
 
-CREATE TABLE "User"(
-	id SERIAL,
-	firstname VARCHAR(100) NOT NULL,
-	lastname VARCHAR(100) NOT NULL,
-	email VARCHAR(255) NOT NULL,
-	role UserRole DEFAULT 'CONTRIBUTOR',
-	CONSTRAINT PK_User PRIMARY KEY(id),
-	CONSTRAINT UC_User_email UNIQUE(email)
-);
-
-CREATE TABLE "Team" (
-	id SERIAL,
-	name VARCHAR(50) NOT NULL,
-	managerId INT NULL,
-	CONSTRAINT PK_Team PRIMARY KEY(id),
-	CONSTRAINT FK_Team_managerId FOREIGN KEY (managerId) REFERENCES "User"(id) ON DELETE SET NULL ON UPDATE CASCADE,
-	CONSTRAINT UC_Team_name UNIQUE(name)
-);
-
-CREATE TABLE "User_Team" (
-	id SERIAL,
-	userId INT NOT NULL,
-	teamId INT NOT NULL,
-	CONSTRAINT PK_User_Team PRIMARY KEY(id),
-	CONSTRAINT FK_User_Team_userId FOREIGN KEY (userId) REFERENCES "User"(id) ON DELETE CASCADE ON UPDATE CASCADE,
-	CONSTRAINT FK_User_Team_teamId FOREIGN KEY (teamId) REFERENCES "Team"(id) ON DELETE CASCADE ON UPDATE CASCADE
-);
 
 -- CI: Un manager doit être membre de l'équipe avant de devenir manager
 CREATE OR REPLACE FUNCTION check_manager_belongs_to_team()
