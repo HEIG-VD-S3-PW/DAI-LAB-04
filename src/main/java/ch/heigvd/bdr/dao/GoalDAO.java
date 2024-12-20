@@ -9,6 +9,38 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GoalDAO implements GenericDAO<Goal, Integer> {
+  private static final String GOAL_QUERY = "SELECT g.id AS goal_id, g.name AS goal_name, g.description AS goal_description, "
+      +
+      "g.note AS goal_note, g.tag AS goal_tag, g.projectId AS goal_projectId, g.teamId AS goal_teamId, " +
+      "t.id AS team_id, t.name AS team_name, " +
+      "p.id AS project_id, p.name AS project_name " +
+      "FROM \"Goal\" g " +
+      "INNER JOIN \"Team\" t ON g.teamId = t.id " +
+      "INNER JOIN \"Project\" p ON g.projectId = p.id";
+
+  private Goal mapGoal(ResultSet rs) throws SQLException {
+    Goal goal = new Goal();
+    goal.setId(rs.getInt("goal_id"));
+    goal.setName(rs.getString("goal_name"));
+    goal.setDescription(rs.getString("goal_description"));
+    goal.setNote(rs.getString("goal_note"));
+    goal.setTag(rs.getString("goal_tag"));
+    goal.setProjectId(rs.getInt("goal_projectId"));
+    goal.setTeamId(rs.getInt("goal_teamId"));
+
+    Team team = new Team();
+    team.setId(rs.getInt("team_id"));
+    team.setName(rs.getString("team_name"));
+    goal.setTeam(team);
+
+    Project project = new Project();
+    project.setId(rs.getInt("project_id"));
+    project.setName(rs.getString("project_name"));
+    goal.setProject(project);
+
+    return goal;
+  }
+
   @Override
   public Goal create(Goal goal) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Goal\" (name, description, note, tag, projectId, teamId) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
@@ -19,6 +51,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
       pstmt.setString(3, goal.getNote());
       pstmt.setString(4, goal.getTag());
       pstmt.setInt(5, goal.getProjectId());
+      pstmt.setInt(6, goal.getTeamId());
       pstmt.executeUpdate();
 
       try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -32,44 +65,29 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
 
   @Override
   public Goal findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
-    String query = "SELECT * FROM \"Goal\" WHERE id = ?";
+    String query = GOAL_QUERY + " WHERE g.id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, id);
 
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
-          Goal goal = new Goal();
-          goal.setId(rs.getInt("id"));
-          goal.setName(rs.getString("name"));
-          goal.setDescription(rs.getString("description"));
-          goal.setNote(rs.getString("note"));
-          goal.setTag(rs.getString("tag"));
-          goal.setProjectId(rs.getInt("projectId"));
-          return goal;
+          return mapGoal(rs);
         }
       }
-      return null;
     }
+    return null;
   }
 
   @Override
   public List<Goal> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Goal> goals = new ArrayList<>();
-    String query = "SELECT * FROM \"Goal\"";
     try (Connection conn = DatabaseUtil.getConnection();
         Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery(query)) {
+        ResultSet rs = stmt.executeQuery(GOAL_QUERY)) {
 
       while (rs.next()) {
-        Goal goal = new Goal();
-        goal.setId(rs.getInt("id"));
-        goal.setName(rs.getString("name"));
-        goal.setDescription(rs.getString("description"));
-        goal.setNote(rs.getString("note"));
-        goal.setTag(rs.getString("tag"));
-        goal.setProjectId(rs.getInt("projectId"));
-        goals.add(goal);
+        goals.add(mapGoal(rs));
       }
       return goals;
     }
@@ -77,6 +95,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
 
   @Override
   public Goal update(Goal goal) throws ClassNotFoundException, SQLException, IOException {
+    System.out.println(goal.getTeamId());
     String query = "UPDATE \"Goal\" SET name = ?, description = ?, note = ?, tag = ?, projectId = ?, teamId = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -85,7 +104,8 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
       pstmt.setString(3, goal.getNote());
       pstmt.setString(4, goal.getTag());
       pstmt.setInt(5, goal.getProjectId());
-      pstmt.setInt(6, goal.getId());
+      pstmt.setInt(6, goal.getTeamId());
+      pstmt.setInt(7, goal.getId());
       pstmt.executeUpdate();
       return goal;
     }
