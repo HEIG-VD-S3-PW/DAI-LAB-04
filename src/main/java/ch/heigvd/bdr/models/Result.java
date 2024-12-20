@@ -10,6 +10,8 @@ public class Result {
   private String tag;
   private int goalId;
 
+  public Result(){}
+
   public Result(int id, Timestamp createdAt, Timestamp endsAt, String note, String tag, int goalId) {
     this.id = id;
     this.createdAt = createdAt;

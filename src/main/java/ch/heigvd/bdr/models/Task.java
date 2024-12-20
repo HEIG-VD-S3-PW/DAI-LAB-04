@@ -14,6 +14,8 @@ public class Task {
   private int requiredTaskId;
   private int resultId;
 
+  public Task(){}
+
   public Task(int id, Timestamp startsAt, short progress, TaskPriority priority,
       TaskDeadline deadline, String note, String tag,
       boolean isRequired, int requiredTaskId, int resultId) {

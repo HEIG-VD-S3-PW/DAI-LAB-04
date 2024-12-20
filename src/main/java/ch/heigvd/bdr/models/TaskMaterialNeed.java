@@ -5,6 +5,8 @@ public class TaskMaterialNeed {
   private Material materialNeedType;
   private int quantity;
 
+  public TaskMaterialNeed() {}
+  
   public TaskMaterialNeed(int taskId, Material materialNeedType, int quantity) {
     this.taskId = taskId;
     this.materialNeedType = materialNeedType;
