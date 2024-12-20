@@ -3,6 +3,7 @@ package ch.heigvd.bdr.dao;
 import ch.heigvd.bdr.DatabaseUtil;
 import ch.heigvd.bdr.models.*;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 public class TeamDAO implements GenericDAO<Team, Integer> {
 
   @Override
-  public Team create(Team team) throws Exception {
+  public Team create(Team team) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Team\" (name, managerId) VALUES (?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -28,7 +29,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
   }
 
   @Override
-  public Team findById(Integer id) throws Exception {
+  public Team findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"Team\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -48,7 +49,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
   }
 
   @Override
-  public List<Team> findAll() throws Exception {
+  public List<Team> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Team> teams = new ArrayList<>();
     String query = "SELECT * FROM \"Team\"";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -67,7 +68,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
   }
 
   @Override
-  public Team update(Team team) throws Exception {
+  public Team update(Team team) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Team\" SET name = ?, managerId = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -80,7 +81,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
   }
 
   @Override
-  public boolean delete(Integer id) throws Exception {
+  public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Team\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {

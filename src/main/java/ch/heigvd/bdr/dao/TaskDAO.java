@@ -3,13 +3,14 @@ package ch.heigvd.bdr.dao;
 import ch.heigvd.bdr.DatabaseUtil;
 import ch.heigvd.bdr.models.*;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TaskDAO implements GenericDAO<Task, Integer> {
   @Override
-  public Task create(Task task) throws Exception {
+  public Task create(Task task) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Task\" (startsAt, progress, priority, deadline, note, tag, isRequired, requiredTaskId, resultId) "
         +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
@@ -36,7 +37,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   }
 
   @Override
-  public Task findById(Integer id) throws Exception {
+  public Task findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"Task\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -63,7 +64,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   }
 
   @Override
-  public List<Task> findAll() throws Exception {
+  public List<Task> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Task> tasks = new ArrayList<>();
     String query = "SELECT * FROM \"Task\"";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -89,7 +90,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   }
 
   @Override
-  public Task update(Task task) throws Exception {
+  public Task update(Task task) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Task\" SET startsAt = ?, progress = ?, priority = ?, deadline = ?, " +
         "note = ?, tag = ?, isRequired = ?, requiredTaskId = ?, resultId = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -110,7 +111,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   }
 
   @Override
-  public boolean delete(Integer id) throws Exception {
+  public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Task\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -120,7 +121,8 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   }
 
   // Relationship methods
-  public List<TaskCollaboratorNeed> getTaskCollaboratorNeeds(int taskId) throws Exception {
+  public List<TaskCollaboratorNeed> getTaskCollaboratorNeeds(int taskId)
+      throws ClassNotFoundException, SQLException, IOException {
     List<TaskCollaboratorNeed> collaboratorNeeds = new ArrayList<>();
     String query = "SELECT * FROM \"Task_CollaboratorNeed\" WHERE taskId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -140,7 +142,8 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
-  public List<TaskMaterialNeed> getTaskMaterialNeeds(int taskId) throws Exception {
+  public List<TaskMaterialNeed> getTaskMaterialNeeds(int taskId)
+      throws ClassNotFoundException, SQLException, IOException {
     List<TaskMaterialNeed> materialNeeds = new ArrayList<>();
     String query = "SELECT * FROM \"Task_MaterialNeed\" WHERE taskId = ?";
     try (Connection conn = DatabaseUtil.getConnection();

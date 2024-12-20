@@ -3,13 +3,14 @@ package ch.heigvd.bdr.dao;
 import ch.heigvd.bdr.DatabaseUtil;
 import ch.heigvd.bdr.models.*;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAO implements GenericDAO<User, Integer> {
   @Override
-  public User create(User user) throws Exception {
+  public User create(User user) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"User\" (firstname, lastname, email, role) VALUES (?, ?, ?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -29,7 +30,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   }
 
   @Override
-  public User findById(Integer id) throws Exception {
+  public User findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"User\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -51,7 +52,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   }
 
   @Override
-  public List<User> findAll() throws Exception {
+  public List<User> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<User> users = new ArrayList<>();
     String query = "SELECT * FROM \"User\"";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -72,7 +73,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   }
 
   @Override
-  public User update(User user) throws Exception {
+  public User update(User user) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"User\" SET firstname = ?, lastname = ?, email = ?, role = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -87,7 +88,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   }
 
   @Override
-  public boolean delete(Integer id) throws Exception {
+  public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"User\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -97,7 +98,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   }
 
   // Relationship methods
-  public List<Team> getUserTeams(int userId) throws Exception {
+  public List<Team> getUserTeams(int userId) throws ClassNotFoundException, SQLException, IOException {
     List<Team> teams = new ArrayList<>();
     String query = "SELECT t.* FROM \"Team\" t " +
         "JOIN \"User_Team\" ut ON t.id = ut.teamId " +
@@ -119,7 +120,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
-  public User findByEmail(String email) throws Exception {
+  public User findByEmail(String email) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"User\" WHERE email = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {

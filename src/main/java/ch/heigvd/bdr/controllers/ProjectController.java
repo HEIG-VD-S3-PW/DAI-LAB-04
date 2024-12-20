@@ -1,7 +1,13 @@
 package ch.heigvd.bdr.controllers;
 
 import io.javalin.http.Context;
+import io.javalin.openapi.*;
+
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
+
 import ch.heigvd.bdr.dao.ProjectDAO;
 import ch.heigvd.bdr.models.Project;
 
@@ -13,72 +19,78 @@ public class ProjectController implements ResourceControllerInterface {
     this.projectDAO = new ProjectDAO();
   }
 
-  // Create a new project
-  @Override
-  public void create(Context ctx) {
-    try {
-      Project project = ctx.bodyAsClass(Project.class);
-      Project createdProject = projectDAO.create(project);
-      ctx.status(201).json(createdProject);
-    } catch (Exception e) {
-      ctx.status(500).json("Error: " + e.getMessage());
-    }
-  }
-
-  // Retrieve a single project by ID
-  @Override
-  public void show(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Project project = projectDAO.findById(id);
-      if (project != null) {
-        ctx.json(project);
-      } else {
-        ctx.status(404).json("Project not found");
-      }
-    } catch (Exception e) {
-      ctx.status(500).json("Error: " + e.getMessage());
-    }
-  }
-
+  @OpenApi(path = "/projects", methods = HttpMethod.GET, operationId = "getAllProjects", summary = "Get all projects", description = "Returns a list of all projects.", tags = "Projects", responses = {
+      @OpenApiResponse(status = "200", description = "List of all projects", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
   // Retrieve all projects
   @Override
-  public void all(Context ctx) {
-    try {
-      List<Project> projects = projectDAO.findAll();
-      ctx.json(projects);
-    } catch (Exception e) {
-      ctx.status(500).json("Error: " + e.getMessage());
+  public void all(Context ctx) throws SQLException, ClassNotFoundException, IOException {
+    List<Project> projects = projectDAO.findAll();
+    ctx.json(projects);
+  }
+
+  @OpenApi(path = "/projects", methods = HttpMethod.POST, operationId = "createProject", summary = "Create a new project", description = "Creates a new project in the system.", tags = "Projects", requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = Project.class)), responses = {
+      @OpenApiResponse(status = "201", description = "Project created successfully", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "400", description = "Bad Request"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  // Create a new project
+  @Override
+  public void create(Context ctx) throws ClassNotFoundException, IOException, SQLException {
+    Project project = ctx.bodyAsClass(Project.class);
+    Project createdProject = projectDAO.create(project);
+    ctx.status(201).json(createdProject);
+  }
+
+  @OpenApi(path = "/projects/{id}", methods = HttpMethod.GET, operationId = "getProjectById", summary = "Get project by ID", description = "Fetches a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "User found", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "404", description = "User not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  // Retrieve a single project by ID
+  @Override
+  public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Project project = projectDAO.findById(id);
+
+    if (project != null) {
+      ctx.json(project);
+    } else {
+      ctx.status(404).json("Project not found");
     }
   }
 
+  @OpenApi(path = "/projects/{id}", methods = HttpMethod.PUT, operationId = "updateProject", summary = "Update project by ID", description = "Updates project information by ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated user details", content = @OpenApiContent(from = Project.class)), responses = {
+      @OpenApiResponse(status = "200", description = "User updated successfully", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "404", description = "User not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
   // Update a project
   @Override
-  public void update(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Project project = ctx.bodyAsClass(Project.class);
-      project.setId(id);
-      Project updatedProject = projectDAO.update(project);
-      ctx.json(updatedProject);
-    } catch (Exception e) {
-      ctx.status(500).json("Error: " + e.getMessage());
-    }
+  public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Project project = ctx.bodyAsClass(Project.class);
+    project.setId(id);
+    projectDAO.update(project);
+    ctx.status(204);
   }
 
+  @OpenApi(path = "/projects/{id}", methods = HttpMethod.DELETE, operationId = "deleteProject", summary = "Delete project by ID", description = "Deletes a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "User deleted successfully"),
+      @OpenApiResponse(status = "404", description = "User not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
   // Delete a project
   @Override
-  public void delete(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      boolean deleted = projectDAO.delete(id);
-      if (deleted) {
-        ctx.status(204);
-      } else {
-        ctx.status(404).json("Project not found");
-      }
-    } catch (Exception e) {
-      ctx.status(500).json("Error: " + e.getMessage());
+  public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    boolean deleted = projectDAO.delete(id);
+
+    if (deleted) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json("Project not found");
     }
   }
 }
