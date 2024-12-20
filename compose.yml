@@ -162,6 +162,19 @@ services:
       - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME}`)
       # This is needed to access the Traefik dashboard
       - traefik.http.routers.traefik.service=api@internal
+  swagger-ui:
+    profiles: [prod, dev]
+    container_name: swagger-ui
+    image: swaggerapi/swagger-ui
+    ports:
+      - 8085:8080
+    networks:
+      - traefik_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
 
 networks:
   traefik_network:
