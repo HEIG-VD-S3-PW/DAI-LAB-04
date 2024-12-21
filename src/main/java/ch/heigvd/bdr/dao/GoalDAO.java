@@ -3,13 +3,14 @@ package ch.heigvd.bdr.dao;
 import ch.heigvd.bdr.DatabaseUtil;
 import ch.heigvd.bdr.models.*;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GoalDAO implements GenericDAO<Goal, Integer> {
   @Override
-  public Goal create(Goal goal) throws Exception {
+  public Goal create(Goal goal) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Goal\" (name, description, note, tag, projectId, teamId) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -30,7 +31,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
   }
 
   @Override
-  public Goal findById(Integer id) throws Exception {
+  public Goal findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"Goal\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -53,7 +54,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
   }
 
   @Override
-  public List<Goal> findAll() throws Exception {
+  public List<Goal> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Goal> goals = new ArrayList<>();
     String query = "SELECT * FROM \"Goal\"";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -75,7 +76,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
   }
 
   @Override
-  public Goal update(Goal goal) throws Exception {
+  public Goal update(Goal goal) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Goal\" SET name = ?, description = ?, note = ?, tag = ?, projectId = ?, teamId = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -91,7 +92,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
   }
 
   @Override
-  public boolean delete(Integer id) throws Exception {
+  public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Goal\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -101,7 +102,7 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
   }
 
   // Relationship methods
-  public List<Result> getGoalResults(int goalId) throws Exception {
+  public List<Result> getGoalResults(int goalId) throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = new ArrayList<>();
     String query = "SELECT * FROM \"Result\" WHERE goalId = ?";
     try (Connection conn = DatabaseUtil.getConnection();

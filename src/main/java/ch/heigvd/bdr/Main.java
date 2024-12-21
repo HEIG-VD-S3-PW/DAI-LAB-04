@@ -12,10 +12,14 @@ import java.util.Map;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.postgresql.util.PSQLException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.node.TextNode;
 import ch.heigvd.bdr.controllers.*;
 import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.exceptions.DatabaseExceptionHandler;
 import ch.heigvd.bdr.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +31,7 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.security.RouteRole;
+import kotlin.reflect.jvm.internal.KClassImpl.Data;
 
 /**
  * Starts Javalin server with OpenAPI plugin
@@ -99,10 +104,16 @@ public final class Main implements Handler {
 
     Logger log = LoggerFactory.getLogger(Main.class);
 
-    // DEFINE callbacks for exceptions
+    // bad request (json deserialisation error)
+    app.exception(UnrecognizedPropertyException.class, (e, ctx) -> {
+      ctx.status(400).json(e.getMessage());
+    });
+
+    app.exception(PSQLException.class, (e, ctx) -> {
+      DatabaseExceptionHandler.handlePostgreSQLException(e, ctx);
+    });
     app.exception(Exception.class, (e, ctx) -> {
-      log.error("other exception happen: ", e);
-      ctx.status(500).result(e.getMessage());
+      DatabaseExceptionHandler.handleGenericException(e, ctx);
     });
 
     // routes

@@ -3,13 +3,14 @@ package ch.heigvd.bdr.dao;
 import ch.heigvd.bdr.DatabaseUtil;
 import ch.heigvd.bdr.models.*;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectDAO implements GenericDAO<Project, Integer> {
   @Override
-  public Project create(Project project) throws Exception {
+  public Project create(Project project) throws SQLException, ClassNotFoundException, IOException {
     String query = "INSERT INTO \"Project\" (name) VALUES (?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -26,7 +27,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
   }
 
   @Override
-  public Project findById(Integer id) throws Exception {
+  public Project findById(Integer id) throws SQLException, IOException, ClassNotFoundException {
     String query = "SELECT * FROM \"Project\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -45,7 +46,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
   }
 
   @Override
-  public List<Project> findAll() throws Exception {
+  public List<Project> findAll() throws SQLException, IOException, ClassNotFoundException {
     List<Project> projects = new ArrayList<>();
     String query = "SELECT * FROM \"Project\"";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -63,7 +64,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
   }
 
   @Override
-  public Project update(Project project) throws Exception {
+  public Project update(Project project) throws SQLException, IOException, ClassNotFoundException {
     String query = "UPDATE \"Project\" SET name = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -75,7 +76,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
   }
 
   @Override
-  public boolean delete(Integer id) throws Exception {
+  public boolean delete(Integer id) throws SQLException, IOException, ClassNotFoundException {
     String query = "DELETE FROM \"Project\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
@@ -85,7 +86,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
   }
 
   // Relationship methods
-  public List<Goal> getProjectGoals(int projectId) throws Exception {
+  public List<Goal> getProjectGoals(int projectId) throws SQLException, IOException, ClassNotFoundException {
     List<Goal> goals = new ArrayList<>();
     String query = "SELECT * FROM \"Goal\" WHERE projectId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
