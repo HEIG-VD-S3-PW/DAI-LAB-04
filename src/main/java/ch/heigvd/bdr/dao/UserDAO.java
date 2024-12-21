@@ -51,6 +51,27 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  public User findByEmail(String email) throws ClassNotFoundException, SQLException, IOException {
+    String query = "SELECT * FROM \"User\" WHERE email = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setString(1, email);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          User user = new User();
+          user.setId(rs.getInt("id"));
+          user.setFirstname(rs.getString("firstname"));
+          user.setLastname(rs.getString("lastname"));
+          user.setEmail(rs.getString("email"));
+          user.setRole(UserRole.valueOf(rs.getString("role")));
+          return user;
+        }
+      }
+      return null;
+    }
+  }
+
   @Override
   public List<User> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<User> users = new ArrayList<>();
@@ -120,24 +141,36 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
-  public User findByEmail(String email) throws ClassNotFoundException, SQLException, IOException {
-    String query = "SELECT * FROM \"User\" WHERE email = ?";
+  public boolean joinTeam(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "INSERT INTO \"User_Team\" (userId, teamId) VALUES (?, ?)";
     try (Connection conn = DatabaseUtil.getConnection();
-        PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setString(1, email);
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+      pstmt.setInt(2, teamId);
 
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
-          User user = new User();
-          user.setId(rs.getInt("id"));
-          user.setFirstname(rs.getString("firstname"));
-          user.setLastname(rs.getString("lastname"));
-          user.setEmail(rs.getString("email"));
-          user.setRole(UserRole.valueOf(rs.getString("role")));
-          return user;
+          return true;
         }
       }
-      return null;
+      return false;
     }
   }
+
+  public boolean leaveTeam(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "DELETE FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+      pstmt.setInt(2, teamId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
 }
