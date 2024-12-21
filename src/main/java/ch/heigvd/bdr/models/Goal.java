@@ -8,11 +8,13 @@ public class Goal {
   private String tag;
   private int projectId;
   private int teamId;
+  private Team team;
+  private Project project;
 
   public Goal() {
   }
 
-  public Goal(int id, String name, String description, String note, String tag, int projectId, int teamId){
+  public Goal(int id, String name, String description, String note, String tag, int projectId, int teamId) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -20,10 +22,6 @@ public class Goal {
     this.tag = tag;
     this.projectId = projectId;
     this.teamId = teamId;
-  }
-
-  public Goal(int id, String name, String description, String note, String tag, int projectId) {
-    this(id, name, description, note, tag, projectId, 0);
   }
 
   // Getters and setters
@@ -75,7 +73,27 @@ public class Goal {
     this.projectId = projectId;
   }
 
-  public int getTeamId() {return teamId;}
+  public int getTeamId() {
+    return teamId;
+  }
 
-  public void setTeamId(int teamId) {this.teamId = teamId;}
+  public void setTeamId(int teamId) {
+    this.teamId = teamId;
+  }
+
+  public void setProject(Project p) {
+    this.project = p;
+  }
+
+  public Project getProject() {
+    return this.project;
+  }
+
+  public void setTeam(Team t) {
+    this.team = t;
+  }
+
+  public Team getTeam() {
+    return this.team;
+  }
 }
