@@ -114,4 +114,57 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
       return members;
     }
   }
+
+  public boolean addManager(User user, int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "UPDATE \"Team\" SET managerId = ? WHERE id = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, user.getId());
+      pstmt.setInt(2, teamId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  public User getManager(int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "SELECT * FROM User u INNER JOIN Team t ON u.id = t.managerId WHERE t.id = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, teamId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          User user = new User();
+          user.setId(rs.getInt("id"));
+          user.setFirstname(rs.getString("firstname"));
+          user.setLastname(rs.getString("lastname"));
+          user.setEmail(rs.getString("email"));
+          user.setRole(UserRole.valueOf(rs.getString("role")));
+          return user;
+        }
+      }
+      return null;
+    }
+  }
+
+  public boolean removeManager(int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "UPDATE \"Team\" SET managerId = NULL WHERE id = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, teamId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        if (rs.next()) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
 }
