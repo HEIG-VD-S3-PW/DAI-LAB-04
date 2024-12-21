@@ -157,69 +157,19 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
-  public Team createTeam(String name, int managerId) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Team\" (name, managerId) VALUES (?, ?) RETURNING id";
+  public boolean leaveTeam(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "DELETE FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setString(1, name);
-      pstmt.setInt(2, managerId);
+      pstmt.setInt(1, userId);
+      pstmt.setInt(2, teamId);
 
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
-          Team team = new Team();
-          team.setId(rs.getInt("id"));
-          team.setName(name);
-          team.setManagerId(managerId);
-          return team;
+          return true;
         }
       }
-      return null;
-    }
-  }
-
-  public Project createProject(String name) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Project\" (name) VALUES (?) RETURNING id";
-    try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setString(1, name);
-
-      try (ResultSet rs = pstmt.executeQuery()) {
-        if (rs.next()) {
-          Project project = new Project();
-          project.setId(rs.getInt("id"));
-          project.setName(name);
-          return project;
-        }
-      }
-      return null;
-    }
-  }
-
-  public Goal createGoal(String name, String description, String note, String tag, int projectId, int teamId) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Goal\" (name, description, note, tag, projectId, teamId) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
-    try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setString(1, name);
-      pstmt.setString(2, description);
-      pstmt.setString(3, note);
-      pstmt.setString(4, tag);
-      pstmt.setInt(5, projectId);
-      pstmt.setInt(6, teamId);
-
-      try (ResultSet rs = pstmt.executeQuery()) {
-        if (rs.next()) {
-          Goal goal = new Goal();
-          goal.setId(rs.getInt("id"));
-          goal.setName(name);
-          goal.setDescription(description);
-          goal.setNote(note);
-          goal.setTag(tag);
-          goal.setProjectId(projectId);
-          goal.setTeamId(teamId);
-          return goal;
-        }
-      }
-      return null;
+      return false;
     }
   }
 
