@@ -2,12 +2,12 @@ package ch.heigvd.bdr.controllers;
 
 import io.javalin.http.Context;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.UUID;
 
 import ch.heigvd.bdr.dao.TaskDAO;
 import ch.heigvd.bdr.models.Task;
-import ch.heigvd.bdr.dao.UserDAO;
-import ch.heigvd.bdr.models.User;
 import io.javalin.openapi.*;
 
 public class TaskController implements ResourceControllerInterface {
@@ -18,12 +18,8 @@ public class TaskController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void all(Context ctx) {
-    try {
-      ctx.json(taskDAO.findAll());
-    } catch (Exception e) {
-      ctx.status(500).json("Error fetching tasks: " + e.getMessage());
-    }
+  public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    ctx.json(taskDAO.findAll());
   }
 
   @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", responses = {
@@ -31,7 +27,7 @@ public class TaskController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void create(Context ctx) {
+  public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     try {
       Task task = ctx.bodyAsClass(Task.class);
       ctx.status(201).json(taskDAO.create(task));
@@ -46,19 +42,13 @@ public class TaskController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void show(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Task task = taskDAO.findById(id);
-      if (task != null) {
-        ctx.json(task);
-      } else {
-        ctx.status(404).json("Task not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Task task = taskDAO.findById(id);
+    if (task != null) {
+      ctx.json(task);
+    } else {
+      ctx.status(404).json("Task not found");
     }
   }
 
@@ -68,21 +58,16 @@ public class TaskController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void update(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Task task = ctx.bodyAsClass(Task.class);
-      task.setId(id);
-      Task updatedTask = taskDAO.update(task);
-      if (updatedTask != null) {
-        ctx.json(updatedTask);
-      } else {
-        ctx.status(404).json("Task not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Task task = ctx.bodyAsClass(Task.class);
+
+    task.setId(id);
+    Task updatedTask = taskDAO.update(task);
+    if (updatedTask != null) {
+      ctx.json(updatedTask);
+    } else {
+      ctx.status(404).json("Task not found");
     }
   }
 
@@ -92,18 +77,12 @@ public class TaskController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void delete(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      if (taskDAO.delete(id)) {
-        ctx.status(204);
-      } else {
-        ctx.status(404).json("Task not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    if (taskDAO.delete(id)) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json("Task not found");
     }
   }
 }

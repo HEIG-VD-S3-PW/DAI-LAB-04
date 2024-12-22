@@ -4,6 +4,9 @@ import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.TeamDAO;
 import ch.heigvd.bdr.models.Team;
 import io.javalin.openapi.*;
+
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.UUID;
 
 public class TeamController implements ResourceControllerInterface {
@@ -14,12 +17,8 @@ public class TeamController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void all(Context ctx) {
-    try {
-      ctx.json(teamDAO.findAll());
-    } catch (Exception e) {
-      ctx.status(500).json("Error fetching teams: " + e.getMessage());
-    }
+  public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    ctx.json(teamDAO.findAll());
   }
 
   @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
@@ -27,13 +26,9 @@ public class TeamController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void create(Context ctx) {
-    try {
-      Team team = ctx.bodyAsClass(Team.class);
-      ctx.status(201).json(teamDAO.create(team));
-    } catch (Exception e) {
-      ctx.status(400).json("Error creating team: " + e.getMessage());
-    }
+  public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    Team team = ctx.bodyAsClass(Team.class);
+    ctx.status(201).json(teamDAO.create(team));
   }
 
   @OpenApi(path = "/teams/{id}", methods = HttpMethod.GET, operationId = "getTeamById", summary = "Get team by ID", description = "Fetches a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
@@ -42,19 +37,13 @@ public class TeamController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void show(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Team team = teamDAO.findById(id);
-      if (team != null) {
-        ctx.json(team);
-      } else {
-        ctx.status(404).json("Team not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Team team = teamDAO.findById(id);
+    if (team != null) {
+      ctx.json(team);
+    } else {
+      ctx.status(404).json("Team not found");
     }
   }
 
@@ -64,21 +53,15 @@ public class TeamController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void update(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Team team = ctx.bodyAsClass(Team.class);
-      team.setId(id);
-      Team updatedTeam = teamDAO.update(team);
-      if (updatedTeam != null) {
-        ctx.json(updatedTeam);
-      } else {
-        ctx.status(404).json("Team not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Team team = ctx.bodyAsClass(Team.class);
+    team.setId(id);
+    Team updatedTeam = teamDAO.update(team);
+    if (updatedTeam != null) {
+      ctx.json(updatedTeam);
+    } else {
+      ctx.status(404).json("Team not found");
     }
   }
 
@@ -88,18 +71,12 @@ public class TeamController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void delete(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      if (teamDAO.delete(id)) {
-        ctx.status(204);
-      } else {
-        ctx.status(404).json("Team not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    if (teamDAO.delete(id)) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json("Team not found");
     }
   }
 }

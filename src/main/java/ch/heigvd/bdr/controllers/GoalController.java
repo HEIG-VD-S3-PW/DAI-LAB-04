@@ -5,6 +5,9 @@ import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.GoalDAO;
 import ch.heigvd.bdr.models.Goal;
 import io.javalin.openapi.*;
+
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.UUID;
 
 public class GoalController implements ResourceControllerInterface {
@@ -15,12 +18,8 @@ public class GoalController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void all(Context ctx) {
-    try {
-      ctx.json(goalDAO.findAll());
-    } catch (Exception e) {
-      ctx.status(500).json("Error fetching goals: " + e.getMessage());
-    }
+  public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    ctx.json(goalDAO.findAll());
   }
 
   @OpenApi(path = "/goals", methods = HttpMethod.POST, operationId = "createGoal", summary = "Create a new goal", description = "Creates a new goal.", tags = "Goals", requestBody = @OpenApiRequestBody(description = "Goal details", content = @OpenApiContent(from = Goal.class)), responses = {
@@ -28,13 +27,9 @@ public class GoalController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void create(Context ctx) {
-    try {
-      Goal goal = ctx.bodyAsClass(Goal.class);
-      ctx.status(201).json(goalDAO.create(goal));
-    } catch (Exception e) {
-      ctx.status(400).json("Error creating goal: " + e.getMessage());
-    }
+  public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    Goal goal = ctx.bodyAsClass(Goal.class);
+    ctx.status(201).json(goalDAO.create(goal));
   }
 
   @OpenApi(path = "/goals/{id}", methods = HttpMethod.GET, operationId = "getGoalById", summary = "Get goal by ID", description = "Fetches a goal by its ID.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
@@ -43,19 +38,13 @@ public class GoalController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void show(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Goal goal = goalDAO.findById(id);
-      if (goal != null) {
-        ctx.json(goal);
-      } else {
-        ctx.status(404).json("Goal not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Goal goal = goalDAO.findById(id);
+    if (goal != null) {
+      ctx.json(goal);
+    } else {
+      ctx.status(404).json("Goal not found");
     }
   }
 
@@ -65,21 +54,16 @@ public class GoalController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void update(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      Goal goal = ctx.bodyAsClass(Goal.class);
-      goal.setId(id);
-      Goal updatedGoal = goalDAO.update(goal);
-      if (updatedGoal != null) {
-        ctx.json(updatedGoal);
-      } else {
-        ctx.status(404).json("Goal not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    Goal goal = ctx.bodyAsClass(Goal.class);
+
+    goal.setId(id);
+    Goal updatedGoal = goalDAO.update(goal);
+    if (updatedGoal != null) {
+      ctx.json(updatedGoal);
+    } else {
+      ctx.status(404).json("Goal not found");
     }
   }
 
@@ -89,18 +73,12 @@ public class GoalController implements ResourceControllerInterface {
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
-  public void delete(Context ctx) {
-    try {
-      int id = Integer.parseInt(ctx.pathParam("id"));
-      if (goalDAO.delete(id)) {
-        ctx.status(204);
-      } else {
-        ctx.status(404).json("Goal not found");
-      }
-    } catch (NumberFormatException e) {
-      ctx.status(400).json("Invalid ID format");
-    } catch (Exception e) {
-      ctx.status(500).json("Unexpected error: " + e.getMessage());
+  public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int id = Integer.parseInt(ctx.pathParam("id"));
+    if (goalDAO.delete(id)) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json("Goal not found");
     }
   }
 }
