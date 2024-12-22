@@ -54,7 +54,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   public User findByEmail(String email) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"User\" WHERE email = ?";
     try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setString(1, email);
 
       try (ResultSet rs = pstmt.executeQuery()) {
@@ -119,11 +119,20 @@ public class UserDAO implements GenericDAO<User, Integer> {
   }
 
   // Relationship methods
-  public List<Team> getUserTeams(int userId) throws ClassNotFoundException, SQLException, IOException {
+  public List<Team> getTeams(int userId) throws ClassNotFoundException, SQLException, IOException {
     List<Team> teams = new ArrayList<>();
-    String query = "SELECT t.* FROM \"Team\" t " +
-        "JOIN \"User_Team\" ut ON t.id = ut.teamId " +
-        "WHERE ut.userId = ?";
+    String query = """
+        SELECT t.*, manager.id as manager_id,
+               manager.firstname as manager_firstname,
+               manager.lastname as manager_lastname,
+               manager.email as manager_email,
+               manager.role as manager_role
+        FROM "Team" t
+        INNER JOIN \"User_Team\" ut ON t.id = ut.teamId
+        LEFT JOIN \"User\" manager ON manager.id = t.managerId
+        WHERE ut.userId = ?
+        """;
+
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, userId);
@@ -131,10 +140,21 @@ public class UserDAO implements GenericDAO<User, Integer> {
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
           Team team = new Team();
+          User manager = new User();
           team.setId(rs.getInt("id"));
           team.setName(rs.getString("name"));
-          team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
+
+          int managerId = rs.getInt("managerId");
+          team.setManagerId(managerId);
+          if (managerId != 0) {
+            manager.setId(rs.getInt("manager_id"));
+            manager.setFirstname(rs.getString("manager_firstname"));
+            manager.setLastname(rs.getString("manager_lastname"));
+            manager.setRole(UserRole.valueOf(rs.getString("manager_role")));
+            team.setManager(manager);
+          }
           teams.add(team);
+
         }
       }
       return teams;
@@ -144,7 +164,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   public boolean joinTeam(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"User_Team\" (userId, teamId) VALUES (?, ?)";
     try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, userId);
       pstmt.setInt(2, teamId);
 
@@ -160,7 +180,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
   public boolean leaveTeam(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, userId);
       pstmt.setInt(2, teamId);
 
@@ -170,6 +190,36 @@ public class UserDAO implements GenericDAO<User, Integer> {
         }
       }
       return false;
+    }
+  }
+
+  public List<Goal> getGoals(int userId) throws ClassNotFoundException, SQLException, IOException {
+    List<Goal> goals = new ArrayList<>();
+    String query = """
+          SELECT g.*
+          FROM "User_Team" ut
+          INNER JOIN "Team" t ON t.id = ut.teamid
+          INNER JOIN "Goal" g ON g.teamid  = t.id
+          WHERE ut.userid = ?;
+        """;
+
+    try (Connection conn = DatabaseUtil.getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+          Goal goal = new Goal();
+          goal.setId(rs.getInt("id"));
+          goal.setName(rs.getString("name"));
+          goal.setDescription(rs.getString("description"));
+          goal.setTag(rs.getString("tag"));
+          goal.setNote(rs.getString("note"));
+
+          goals.add(goal);
+        }
+      }
+      return goals;
     }
   }
 
