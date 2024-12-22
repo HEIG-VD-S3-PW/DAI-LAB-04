@@ -4,8 +4,10 @@ public class Team {
   private int id;
   private String name;
   private int managerId;
+  private User manager;
 
-  public Team(){}
+  public Team() {
+  }
 
   public Team(int id, String name, Integer managerId) {
     this.id = id;
@@ -34,6 +36,16 @@ public class Team {
     return managerId;
   }
 
-  public void setManagerId(int managerId) {this.managerId = managerId;}
+  public void setManagerId(int managerId) {
+    this.managerId = managerId;
+  }
+
+  public User getManager() {
+    return manager;
+  }
+
+  public void setManager(User manager) {
+    this.manager = manager;
+  }
 
 }
