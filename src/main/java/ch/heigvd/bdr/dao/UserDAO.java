@@ -11,7 +11,7 @@ import java.util.List;
 public class UserDAO implements GenericDAO<User, Integer> {
   @Override
   public User create(User user) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"User\" (firstname, lastname, email, role) VALUES (?, ?, ?, ?) RETURNING id";
+    String query = "INSERT INTO \"User\" (firstname, lastname, email, role) VALUES (?, ?, ?, ?::\"UserRole\") RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
       pstmt.setString(1, user.getFirstname());
