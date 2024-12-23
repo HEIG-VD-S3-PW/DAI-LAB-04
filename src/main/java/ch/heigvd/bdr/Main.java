@@ -31,6 +31,7 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.security.RouteRole;
+import kotlin.Result;
 import kotlin.reflect.jvm.internal.KClassImpl.Data;
 
 /**
@@ -150,6 +151,13 @@ public final class Main implements Handler {
     app.post("/goals", goalController::create);
     app.put("/goals/{id}", goalController::update);
     app.delete("/goals/{id}", goalController::delete);
+
+    ResultController resultController = new ResultController();
+    app.get("/results", resultController::all);
+    app.get("/results/{id}", resultController::show);
+    app.post("/results", resultController::create);
+    app.put("/results/{id}", resultController::update);
+    app.delete("/results/{id}", resultController::delete);
 
     TaskController taskController = new TaskController();
     app.get("/tasks", taskController::all);
