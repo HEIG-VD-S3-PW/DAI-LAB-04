@@ -9,8 +9,10 @@ public class Result {
   private String note;
   private String tag;
   private int goalId;
+  private Goal goal;
 
-  public Result(){}
+  public Result() {
+  }
 
   public Result(int id, Timestamp createdAt, Timestamp endsAt, String note, String tag, int goalId) {
     this.id = id;
@@ -68,5 +70,13 @@ public class Result {
 
   public void setGoalId(int goalId) {
     this.goalId = goalId;
+  }
+
+  public Goal getGoal() {
+    return goal;
+  }
+
+  public void setGoal(Goal goal) {
+    this.goal = goal;
   }
 }
