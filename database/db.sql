@@ -18,15 +18,12 @@ DROP TABLE IF EXISTS "Result";
 DROP TABLE IF EXISTS "Goal";
 DROP TABLE IF EXISTS "Project";
 
-<<<<<<< Updated upstream
-=======
 DROP TRIGGER IF EXISTS check_circular_dependency ON "Task_Subtask";
 DROP FUNCTION IF EXISTS check_task_subtask_relation;
 
 DROP TRIGGER IF EXISTS check_on_task_done ON "Task";
 DROP FUNCTION IF EXISTS check_dependencies_on_task_done;
 
->>>>>>> Stashed changes
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
 
 CREATE Type "Material" AS ENUM('LICENSE', 'SERVER', 'DATABASE'); 
@@ -102,20 +99,15 @@ CREATE TABLE "Result"(
 );
 
 CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
-CREATE TYPE "TaskDeadLine" AS ENUM ('3_MONTHS', '1_YEAR', '3_YEARS');
+CREATE TYPE "TaskDeadLine" AS ENUM ('THREE_MONTHS', 'ONE_YEAR', 'THREE_YEARS');
 CREATE TABLE "Task"(
 	id SERIAL,
 	startsAt TIMESTAMP NOT NULL,
 	done BOOLEAN NOT NULL DEFAULT FALSE,
 	priority "TaskPriority" DEFAULT 'MEDIUM',
-	deadline "TaskDeadLine" DEFAULT '3_MONTHS',
+	deadline "TaskDeadLine" DEFAULT 'THREE_MONTHS',
 	note TEXT,
 	tag TEXT,
-<<<<<<< Updated upstream
-	isRequired BOOL DEFAULT FALSE,
-	parentTaskId INT NULL,
-=======
->>>>>>> Stashed changes
 	resultId INT NOT NULL,
 	CONSTRAINT PK_Task PRIMARY KEY(id),
 	CONSTRAINT UC_Task_starts_at UNIQUE(startsAt),
@@ -123,8 +115,6 @@ CREATE TABLE "Task"(
 	CONSTRAINT FK_Task_resultId FOREIGN KEY (resultId) REFERENCES "Result"(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-<<<<<<< Updated upstream
-=======
 CREATE TABLE "Task_Subtask" (
 	id SERIAL,
 	taskId INT NOT NULL,
@@ -196,7 +186,6 @@ FOR EACH ROW
 WHEN (OLD.done IS DISTINCT FROM NEW.done)
 EXECUTE FUNCTION check_dependencies_on_task_done();
 
->>>>>>> Stashed changes
 CREATE TABLE "Task_CollaboratorNeed" (
 	taskId INT NOT NULL,
 	collaboratorNeedType "UserRole" NOT NULL,
