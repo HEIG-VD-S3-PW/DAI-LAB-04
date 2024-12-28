@@ -18,6 +18,12 @@ DROP TABLE IF EXISTS "Result";
 DROP TABLE IF EXISTS "Goal";
 DROP TABLE IF EXISTS "Project";
 
+DROP TRIGGER IF EXISTS check_circular_dependency ON "Task_Subtask";
+DROP FUNCTION IF EXISTS check_task_subtask_relation;
+
+DROP TRIGGER IF EXISTS check_on_task_done ON "Task";
+DROP FUNCTION IF EXISTS check_dependencies_on_task_done;
+
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
 
 CREATE Type "Material" AS ENUM('LICENSE', 'SERVER', 'DATABASE'); 
@@ -93,23 +99,92 @@ CREATE TABLE "Result"(
 );
 
 CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
-CREATE TYPE "TaskDeadLine" AS ENUM ('3_MONTHS', '1_YEAR', '3_YEARS');
+CREATE TYPE "TaskDeadLine" AS ENUM ('THREE_MONTHS', 'ONE_YEAR', 'THREE_YEARS');
 CREATE TABLE "Task"(
 	id SERIAL,
 	startsAt TIMESTAMP NOT NULL,
-	progress SMALLINT CHECK (progress >= 0 AND progress <= 100),
+	done BOOLEAN NOT NULL DEFAULT FALSE,
 	priority "TaskPriority" DEFAULT 'MEDIUM',
-	deadline "TaskDeadLine" DEFAULT '3_MONTHS',
+	deadline "TaskDeadLine" DEFAULT 'THREE_MONTHS',
 	note TEXT,
 	tag TEXT,
-	isRequired BOOL DEFAULT FALSE,
-	parentTaskId INT NULL,
 	resultId INT NOT NULL,
 	CONSTRAINT PK_Task PRIMARY KEY(id),
 	CONSTRAINT UC_Task_starts_at UNIQUE(startsAt),
 	CONSTRAINT FK_Task_parentTaskId FOREIGN KEY (parentTaskId) REFERENCES "Task"(id) ON DELETE SET NULL ON UPDATE CASCADE,
 	CONSTRAINT FK_Task_resultId FOREIGN KEY (resultId) REFERENCES "Result"(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE TABLE "Task_Subtask" (
+	id SERIAL,
+	taskId INT NOT NULL,
+	subtaskId INT NOT NULL,
+  required BOOL DEFAULT FALSE,
+	CONSTRAINT PK_Task_Subtask PRIMARY KEY(id),
+	CONSTRAINT FK_Task_taskId FOREIGN KEY (taskId) REFERENCES "Task"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT FK_Task_subtaskId FOREIGN KEY (subtaskId) REFERENCES "Task"(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT UC_Task_taskId_subtaskId UNIQUE(taskId, subtaskId)
+);
+
+-- Check for circular dependencies
+CREATE OR REPLACE FUNCTION check_task_subtask_relation()
+RETURNS TRIGGER AS $$
+DECLARE
+    circular_dependency_exists BOOLEAN := FALSE;
+BEGIN
+    SELECT EXISTS(
+        WITH RECURSIVE Subtasks AS (
+            SELECT subtaskid FROM "Task_Subtask" WHERE taskid = NEW.taskid
+
+            UNION ALL
+              SELECT ts.subtaskid
+              FROM "Task_Subtask" ts
+              INNER JOIN Subtasks st ON st.subtaskid = ts.taskid
+        )
+        SELECT 1 FROM Subtasks WHERE subtaskid = NEW.subtaskid
+    ) INTO circular_dependency_exists;
+
+    IF circular_dependency_exists THEN
+        RAISE EXCEPTION 'Cannot insert: circular dependency detected. Task % is already a subtask of %.', NEW.subtaskid, NEW.taskid;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_circular_dependency
+BEFORE INSERT ON "Task_Subtask"
+FOR EACH ROW
+EXECUTE FUNCTION check_task_subtask_relation();
+
+-- check for dependencies when marking task as done
+CREATE OR REPLACE FUNCTION check_dependencies_on_task_done()
+RETURNS TRIGGER AS $$
+DECLARE
+    pending_required_dependencies BOOLEAN := FALSE;
+BEGIN
+    SELECT EXISTS(
+        SELECT 1 AS exist
+        FROM "Task_Subtask" ts
+		INNER JOIN "Task" st ON ts.subtaskId = st.id
+        WHERE ts.taskId = NEW.id 
+          AND ts.required IS TRUE 
+          AND st.done IS NOT TRUE
+    ) INTO pending_required_dependencies;
+
+    IF pending_required_dependencies THEN
+        RAISE EXCEPTION 'Cannot mark task as done: direct dependencies still not done.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_on_task_done
+BEFORE UPDATE ON "Task"
+FOR EACH ROW
+WHEN (OLD.done IS DISTINCT FROM NEW.done)
+EXECUTE FUNCTION check_dependencies_on_task_done();
 
 CREATE TABLE "Task_CollaboratorNeed" (
 	taskId INT NOT NULL,
