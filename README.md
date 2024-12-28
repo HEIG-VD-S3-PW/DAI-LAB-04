@@ -1,4 +1,4 @@
-# SimpFT - A Simple File Transfer application
+# ORK - A project management tool
 
 <a name="readme-top"></a>
 
@@ -12,7 +12,7 @@
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#get-the-source-code">Get the source code</a></li>
-        <li><a href="#documentation-and-protocol">Documentation and protocol</a></li>
+        <li><a href="#documentation">Documentation</a></li>
         <li>
           <a href="#prerequisites">Prerequisites</a>
           <ul>
@@ -25,26 +25,13 @@
         <li>
           <a href="#usage">Usage</a>
           <ul>
-            <li><a href="#with-java">With java</a></li>
-            <li>
-              <a href="#with-docker">With docker</a>
-              <ul>
                 <li><a href="#building-the-image">Building the image</a></li>
                 <li><a href="#publishing-the-docker-image">Publishing the Docker image</a></li>
                 <li>
                   <a href="#running-the-image">Running the image</a>
-                  <ul>
-                    <li><a href="#server">Server</a></li>
-                    <li><a href="#client">Client</a></li>
-                  </ul>
                 </li>
                 <li><a href="#demo">Demo</a></li>
-              </ul>
-            </li>
           </ul>
-        </li>
-        <li>
-          <a href="#building-the-image">Building the Docker image</a>
         </li>
       </ul>
     </li>
@@ -59,7 +46,7 @@
 - [Java 21 temurin][java]
 - [Maven][maven]
 - [Docker][docker]
-- [Picocli][picocli]
+- [Javalin][javalin]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -79,26 +66,26 @@ You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst
 First of all, download the source code:
 
 ```sh
-git clone https://github.com/Thynkon/dai-pw-02
-cd dai-pw-02
+git clone https://github.com/HEIG-VD-S3-PW/DAI-LAB-04
+cd DAI-LAB-04
 ```
 
-### Documentation and protocol
+### Documentation
 
 You will find all the information you need to use this application in this readme.
 
-You can find the protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ) if you need to edit
-the it. All the documentation regarding the usage of typst for the documentation
-can be found under [docs/readme.md](./docs/README.md)
 
-The CLI application is self documented and provides all the info you need for its
-arguments using
+The code documentation is written with standard `javadoc`.
 
-```bash
-java -jar simpft.jar --help
-```
+Also, the route's documentation (built with the [OpenAPI spec](https://swagger.io/specification/)) can be accessed throught the following url: http://localhost:8085. Then, you must specify the following url to fetch the **.json** file containing the documentation: http://localhost:7000/api/openapi.json
 
-The code documentation is written with standard javadoc
+Notice, that these url's can only be accessed after launching the backend as the *SWAGGER-UI* client. Detailed instructions about how to do this can be found later in this document.
+
+Here are some images of the **OpenAPI** documentation:
+
+![OpenAPI documentation](./docs/img/open-api-1.png)
+![OpenAPI documentation](./docs/img/open-api-2.png)
+![OpenAPI documentation](./docs/img/open-api-3.png)
 
 ### Prerequisites
 
@@ -184,117 +171,160 @@ java -jar target/<filename>.jar --help
 
 ### Usage
 
-#### With java
+Even though this application can used by simply launching the final `.jar` file, the recommended way to do so is by using `Docker` as we use a `PostgreSQL` database and a `SWAGGER-UI` client to access the `OpenAPI` routes documentation.
 
-Once you have all the prerequisites, including the application archive, you can
-simply run the application like this:
+OKR can be run directly using java or through a docker container.
 
-```bash
-# Run as server
-java -jar simpft.jar --mode server --port 1234 --address localhost --connections 2 --root-dir /path/to/dir
+#### Building the image
 
-# Run client
-java -jar simpft.jar --mode client --port 1234 --address localhost
-```
-
-The default values are:
-
-- Address: localhost
-- Port: 1234
-- Connections: 2
-
-#### With docker
-
-SimpFT can be run directly using java or through a docker container.
-
-The same image can be used for the server and client.
-
-##### Building the image
+As we do not use the same image on development and production stages (ie. we use a filewatcher to automatically rebuild the webapp on development but we use a traeffik container as a reverse proxy on production), you have to specify the target by using [docker compose profiles](https://docs.docker.com/compose/how-tos/profiles/).
 
 You can build the container by cloning the repository and using:
 
 ```bash
-docker build . -t dai-pw-02:latest
+docker build . -t dai-pw-04:latest --target <TARGET> .
 ```
 
 Or with the [compose.yml][compose] file provided
 
 ```bash
-docker compose build
+docker compose --profile <TARGET> build
 ```
 
-When using compose, you can modify the file directly or override the default
-parameters by providing the following environment variables.
+Where  `<TARGET>` is one of these values:
+- dev
+- prod
 
-- SERVER_ADDRESS: the address to expose (default: 127.0.0.1)
-- SERVER_PORT: the port to map on the host (default: 1234)
-- MAX_CONNECTIONS: the number of connections to handle in parallel (default: 2)
+The web application will listen by default on `0.0.0.0:7000`.
 
-##### Publishing the Docker image
+#### Publishing the Docker image
 
-Even though our Docker image is automatically built and publish to Github thanks
-to a custom `workflow`, you can publish it manually thanks to the following commands:
+You can publish the image thanks to the following commands:
 
 ```sh
 # Login to GitHub Container Registry
 docker login ghcr.io -u <username>
 
 # Tag the image with the correct format
-docker tag dai-pw-02 ghcr.io/<username>/dai-pw-02:latest
+docker tag dai-pw-04 ghcr.io/<username>/dai-pw-04:latest
 
 # Publish the image on GitHub Container Registry
-docker push ghcr.io/<username>/dai-pw-02:latest
+docker push ghcr.io/<username>/dai-pw-04:latest
 ```
 
 ##### Running the image
 
-The container simply runs the jar file with the provided arguments so the
-following lines do the same thing
+As the image as multiple dependencies depending on the stage target (dev or prod), we first have to launch them.
 
-```bash
-docker run --rm -v "./data:/data" dai-pw-02:latest --help
-java -jar simpft-1.0.jar --help
+Start by launching and setting up the database container. But first, let's create a [docker credential file](https://docs.docker.com/engine/swarm/secrets/) so the database password is sent securely to the container without being stored in the image.
+
+```sh
+echo "your-db-password" | docker secret create db_password -
 ```
 
-###### Server
+Then, launch the container:
 
-You can run the server either manually using
-
-```bash
-docker run --rm           \
-  -p 127.0.0.1:1234:1234  \
-  -v "./server-data:/data"\
-  dai-pw-02:latest       \
-  --mode server           \
-  --address 0.0.0.0       \
-  --root-dir /data        \
-  --connections 2
+```sh
+docker run -d \
+  --name db \
+  --net traefik_network \
+  -p 5432:5432 \
+  --shm-size=128mb \
+  -e POSTGRES_ROOT_PASSWORD=<ROOT_PW> \
+  -e POSTGRES_DATABASE=bdr \
+  -e POSTGRES_USER=bdr \
+  -e PGUSER=bdr \
+  -e POSTGRES_PASSWORD_FILE=/run/secrets/db_password \
+  -e POSTGRES_PORT=5600 \
+  --health-cmd="pg_isready -d db_prod" \
+  --health-interval=30s \
+  --health-timeout=60s \
+  --health-retries=5 \
+  --health-start-period=80s \
+  --restart unless-stopped \
+  -v $(pwd)/postgres-data:/var/lib/postgresql/data \
+  -v $(pwd)/database/db.sql:/docker-entrypoint-initdb.d/create_database.sql \
+  postgres
 ```
 
-Or with the [compose.yml][compose]
+Where, `<ROOT_PW>` is the password of the root user.
 
-```bash
-docker compose up server
+Then, we also need the `SWAGGER-UI` container so we can consult the route's documentation:
+
+```sh
+docker run -d \
+  --name swagger-ui \
+  --net traefik_network \
+  -p 8085:8080 \
+  swaggerapi/swagger-ui
 ```
 
-And watch the container's logs:
+##### Development
 
-```bash
-docker compose logs -f server
+*Backend*
+```sh
+docker run -d \
+  --name backend-dev \
+  --net traefik_network \
+  -p 7000:7000 \
+  -e DB_NAME=bdr \
+  -e DB_USER=bdr \
+  -e DB_SSL=false \
+  -e DB_PORT=5432 \
+  -v $(pwd):/app \
+  backend-dev
 ```
 
-###### Client
+##### Production
+*backend*
 
-When using the client, you should run the container manually.
-
-```bash
-docker run --rm -v "./client-data:/data" dai-pw-02:latest --mode client -a <server-address>
+```sh
+docker run -d \
+  --name backend-prod \
+  --net traefik_network \
+  -p 7000:7000 \
+  -e DB_NAME=bdr \
+  -e DB_USER=bdr \
+  -e DB_SSL=false \
+  -e DB_PORT=5432 \
+  --label traefik.enable=true \
+  --label traefik.http.routers.user-api-backend.rule=Host\(`api-heig-dai-pw04.duckdns.org`\) \
+  --label traefik.http.routers.user-api.entrypoints=api \
+  --label traefik.http.routers.user-api-backend.tls=true \
+  --label traefik.http.routers.user-api-backend.tls.certresolver=letsencrypt \
+  --label traefik.http.services.user-api-backend.loadbalancer.server.port=7000 \
+  backend-prod
 ```
 
-Or with the [compose.yml][compose]
+*reverse proxy*
+```sh
+docker run -d \
+  --name traefik \
+  --net traefik_network \
+  -p 80:80 \
+  -p 443:443 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v $(pwd)/letsencrypt:/letsencrypt \
+  --restart unless-stopped \
+  -e TRAEFIK_ACME_EMAIL=your-email@example.com \
+  --label traefik.enable=true \
+  --label traefik.docker.network=traefik_network \
+  --label traefik.http.routers.traefik.entrypoints=https \
+  --label traefik.http.routers.traefik.rule=Host\(${TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME}\) \
+  --label traefik.http.routers.traefik.service=api@internal \
+  traefik:${TRAEFIK_IMAGE_VERSION:-latest}
+```
 
-```bash
-docker compose run client
+Or, with docker compose:
+
+```sh
+docker compose --profile dev up
+```
+
+*production*
+
+```sh
+docker compose --profile prod up
 ```
 
 ##### Demo
@@ -391,8 +421,9 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contacts
 
+- [Mathieu Emery](https://github.com/mathieuemery)
+- [NATSIIRT](https://github.com/NATSIIRT)
 - [Thynkon](https://github.com/Thynkon)
-- [Mondotosz](https://github.com/Mondotosz)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -402,6 +433,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 [java]: https://adoptium.net/temurin/releases/
 [maven]: https://maven.apache.org/
 [docker]: https://www.docker.com/
-[picocli]: https://picocli.info/
+[javalin]: https://javalin.io/
 [asdf]: https://asdf-vm.com/
 [compose]: ./compose.yml
