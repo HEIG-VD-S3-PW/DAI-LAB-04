@@ -32,14 +32,13 @@ import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.security.RouteRole;
 import kotlin.Result;
-import kotlin.reflect.jvm.internal.KClassImpl.Data;
 
 /**
  * Starts Javalin server with OpenAPI plugin
  */
 @SuppressWarnings({ "unused", "LombokGetterMayBeUsed", "LombokSetterMayBeUsed", "ProtectedMemberInFinalClass",
     "InnerClassMayBeStatic" })
-public final class Main implements Handler {
+public final class Main /*implements Handler*/ {
 
   enum Rules implements RouteRole {
     ANONYMOUS,

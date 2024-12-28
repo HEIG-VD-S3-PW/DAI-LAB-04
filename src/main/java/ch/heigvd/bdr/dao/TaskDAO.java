@@ -29,7 +29,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   public Task create(Task task) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Task\" (title, startsAt, done, priority, deadline, note, tag, resultId) "
         +
-        "VALUES (?, ?, ?, ?::\"TaskPriority\", ?::\"TaskDeadline\", ?, ?, ?, ?) RETURNING id";
+        "VALUES (?, ?, ?, ?::\"TaskPriority\", ?::\"TaskDeadline\", ?, ?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
         pstmt.setString(1, task.getTitle());
