@@ -9,6 +9,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TaskDAO implements GenericDAO<Task, Integer> {
+  public Task mapToTask(ResultSet rs) throws ClassNotFoundException, SQLException, IOException {
+    Task task = new Task();
+
+    task.setId(rs.getInt("id"));
+    task.setStartsAt(rs.getTimestamp("startsAt"));
+    task.setDone(rs.getBoolean("done"));
+    task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
+    task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
+    task.setNote(rs.getString("note"));
+    task.setTag(rs.getString("tag"));
+    task.setResultId(rs.getInt("resultId"));
+
+    return task;
+  }
+
   @Override
   public Task create(Task task) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Task\" (startsAt, done, priority, deadline, note, tag, resultId) "
@@ -43,15 +58,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
-          Task task = new Task();
-          task.setId(rs.getInt("id"));
-          task.setStartsAt(rs.getTimestamp("startsAt"));
-          task.setDone(rs.getBoolean("done"));
-          task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
-          task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
-          task.setNote(rs.getString("note"));
-          task.setTag(rs.getString("tag"));
-          task.setResultId(rs.getInt("resultId"));
+          Task task = mapToTask(rs);
           return task;
         }
       }
@@ -68,15 +75,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
         ResultSet rs = stmt.executeQuery(query)) {
 
       while (rs.next()) {
-        Task task = new Task();
-        task.setId(rs.getInt("id"));
-        task.setStartsAt(rs.getTimestamp("startsAt"));
-        task.setDone(rs.getBoolean("done"));
-        task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
-        task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
-        task.setNote(rs.getString("note"));
-        task.setTag(rs.getString("tag"));
-        task.setResultId(rs.getInt("resultId"));
+        Task task = mapToTask(rs);
         tasks.add(task);
       }
       return tasks;
@@ -168,15 +167,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          Task task = new Task();
-          task.setId(rs.getInt("id"));
-          task.setStartsAt(rs.getTimestamp("startsAt"));
-          task.setDone(rs.getBoolean("done"));
-          task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
-          task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
-          task.setNote(rs.getString("note"));
-          task.setTag(rs.getString("tag"));
-          task.setResultId(rs.getInt("resultId"));
+          Task task = mapToTask(rs);
 
           boolean isRequired = rs.getBoolean("required");
           SubtaskInfo taskWithRequiredInfo = new SubtaskInfo(task, isRequired);

@@ -9,6 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectDAO implements GenericDAO<Project, Integer> {
+  public Project mapToProject(ResultSet rs) throws ClassNotFoundException, SQLException, IOException {
+    Project project = new Project();
+    project.setId(rs.getInt("id"));
+    project.setName(rs.getString("name"));
+
+    return project;
+  }
+
   @Override
   public Project create(Project project) throws SQLException, ClassNotFoundException, IOException {
     String query = "INSERT INTO \"Project\" (name) VALUES (?) RETURNING id";
@@ -35,9 +43,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
-          Project project = new Project();
-          project.setId(rs.getInt("id"));
-          project.setName(rs.getString("name"));
+          Project project = mapToProject(rs);
           return project;
         }
       }
@@ -54,9 +60,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
         ResultSet rs = stmt.executeQuery(query)) {
 
       while (rs.next()) {
-        Project project = new Project();
-        project.setId(rs.getInt("id"));
-        project.setName(rs.getString("name"));
+        Project project = mapToProject(rs);
         projects.add(project);
       }
       return projects;
