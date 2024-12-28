@@ -11,20 +11,18 @@ import java.util.List;
 public class TaskDAO implements GenericDAO<Task, Integer> {
   @Override
   public Task create(Task task) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Task\" (startsAt, progress, priority, deadline, note, tag, isRequired, requiredTaskId, resultId) "
+    String query = "INSERT INTO \"Task\" (startsAt, done, priority, deadline, note, tag, resultId) "
         +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
       pstmt.setTimestamp(1, task.getStartsAt());
-      pstmt.setShort(2, task.getProgress());
+      pstmt.setBoolean(2, task.getDone());
       pstmt.setString(3, task.getPriority().name());
       pstmt.setString(4, task.getDeadline().name());
       pstmt.setString(5, task.getNote());
       pstmt.setString(6, task.getTag());
-      pstmt.setBoolean(7, task.getIsRequired());
-      pstmt.setObject(8, task.getRequiredTaskId());
-      pstmt.setInt(9, task.getResultId());
+      pstmt.setInt(7, task.getResultId());
       pstmt.executeUpdate();
 
       try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -48,13 +46,11 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
           Task task = new Task();
           task.setId(rs.getInt("id"));
           task.setStartsAt(rs.getTimestamp("startsAt"));
-          task.setProgress(rs.getShort("progress"));
+          task.setDone(rs.getBoolean("done"));
           task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
           task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
           task.setNote(rs.getString("note"));
           task.setTag(rs.getString("tag"));
-          task.setIsRequired(rs.getBoolean("isRequired"));
-          task.setRequiredTaskId(rs.getObject("requiredTaskId") != null ? rs.getInt("requiredTaskId") : null);
           task.setResultId(rs.getInt("resultId"));
           return task;
         }
@@ -75,13 +71,11 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
         Task task = new Task();
         task.setId(rs.getInt("id"));
         task.setStartsAt(rs.getTimestamp("startsAt"));
-        task.setProgress(rs.getShort("progress"));
+        task.setDone(rs.getBoolean("done"));
         task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
         task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
         task.setNote(rs.getString("note"));
         task.setTag(rs.getString("tag"));
-        task.setIsRequired(rs.getBoolean("isRequired"));
-        task.setRequiredTaskId(rs.getObject("requiredTaskId") != null ? rs.getInt("requiredTaskId") : null);
         task.setResultId(rs.getInt("resultId"));
         tasks.add(task);
       }
@@ -91,20 +85,18 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
   @Override
   public Task update(Task task) throws ClassNotFoundException, SQLException, IOException {
-    String query = "UPDATE \"Task\" SET startsAt = ?, progress = ?, priority = ?, deadline = ?, " +
-        "note = ?, tag = ?, isRequired = ?, requiredTaskId = ?, resultId = ? WHERE id = ?";
+    String query = "UPDATE \"Task\" SET startsAt = ?, done = ?, priority = ?, deadline = ?, " +
+        "note = ?, tag = ?, requiredTaskId = ?, resultId = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setTimestamp(1, task.getStartsAt());
-      pstmt.setShort(2, task.getProgress());
+      pstmt.setBoolean(2, task.getDone());
       pstmt.setString(3, task.getPriority().name());
       pstmt.setString(4, task.getDeadline().name());
       pstmt.setString(5, task.getNote());
       pstmt.setString(6, task.getTag());
-      pstmt.setBoolean(7, task.getIsRequired());
-      pstmt.setObject(8, task.getRequiredTaskId());
-      pstmt.setInt(9, task.getResultId());
-      pstmt.setInt(10, task.getId());
+      pstmt.setInt(7, task.getResultId());
+      pstmt.setInt(8, task.getId());
       pstmt.executeUpdate();
       return task;
     }
@@ -162,4 +154,74 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
       return materialNeeds;
     }
   }
+
+  public List<SubtaskInfo> getSubtasks(Task t)
+      throws ClassNotFoundException, SQLException, IOException {
+    List<SubtaskInfo> subtasks = new ArrayList<>();
+    String query = "SELECT t.*, ts.required " +
+        "FROM \"Task\" t " +
+        "INNER JOIN \"Task_Subtask\" ts ON ts.subtaskid = t.id " +
+        "WHERE ts.taskid = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, t.getId());
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+          Task task = new Task();
+          task.setId(rs.getInt("id"));
+          task.setStartsAt(rs.getTimestamp("startsAt"));
+          task.setDone(rs.getBoolean("done"));
+          task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
+          task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
+          task.setNote(rs.getString("note"));
+          task.setTag(rs.getString("tag"));
+          task.setResultId(rs.getInt("resultId"));
+
+          boolean isRequired = rs.getBoolean("required");
+          SubtaskInfo taskWithRequiredInfo = new SubtaskInfo(task, isRequired);
+          subtasks.add(taskWithRequiredInfo);
+        }
+      }
+      return subtasks;
+    }
+  }
+
+  public boolean addSubtaskRelationship(Task task, Task subtask, boolean required)
+      throws ClassNotFoundException, SQLException, IOException {
+    String query = "INSERT INTO \"Task_Subtask\" (taskId, subtaskId, required) VALUES (?, ?, ?)";
+    try (Connection conn = DatabaseUtil.getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setInt(2, subtask.getId());
+      pstmt.setBoolean(3, required);
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
+  public boolean updateSubtaskRequiredProperty(Task task, Task subtask, boolean required)
+      throws ClassNotFoundException, SQLException, IOException {
+    String query = "UPDATE \"Task_Subtask\" SET required = ? WHERE taskId = ? AND subtaskId = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setBoolean(1, required);
+      pstmt.setInt(2, task.getId());
+      pstmt.setInt(3, subtask.getId());
+
+      int rowsAffected = pstmt.executeUpdate();
+      return rowsAffected > 0;
+    }
+  }
+
+  public boolean deleteSubtaskRelationship(Task task, Task subtask)
+      throws ClassNotFoundException, SQLException, IOException {
+    String query = "DELETE FROM \"Task_Subtask\" WHERE taskId = ? AND subtaskId = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setInt(2, subtask.getId());
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
 }
