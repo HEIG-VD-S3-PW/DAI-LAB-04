@@ -95,7 +95,7 @@ public class UserDAO implements GenericDAO<User, Integer> {
 
   @Override
   public User update(User user) throws ClassNotFoundException, SQLException, IOException {
-    String query = "UPDATE \"User\" SET firstname = ?, lastname = ?, email = ?, role = ? WHERE id = ?";
+    String query = "UPDATE \"User\" SET firstname = ?, lastname = ?, email = ?, role = ?::\"UserRole\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setString(1, user.getFirstname());

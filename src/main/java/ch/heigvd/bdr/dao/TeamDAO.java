@@ -12,11 +12,13 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
 
   @Override
   public Team create(Team team) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Team\" (name, managerId) VALUES (?, ?) RETURNING id";
+    //     String query = "INSERT INTO \"Team\" (name, managerId) VALUES (?, ?) RETURNING id";
+    // Temporary fix
+    String query = "INSERT INTO \"Team\" (name) VALUES (?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
       pstmt.setString(1, team.getName());
-      pstmt.setObject(2, team.getManagerId());
+      // pstmt.setObject(2, team.getManagerId());
       pstmt.executeUpdate();
 
       try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -60,7 +62,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
         Team team = new Team();
         team.setId(rs.getInt("id"));
         team.setName(rs.getString("name"));
-        team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
+        // team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
         teams.add(team);
       }
       return teams;

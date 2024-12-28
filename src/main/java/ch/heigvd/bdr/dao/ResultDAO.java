@@ -12,6 +12,7 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     Result result = new Result();
 
     result.setId(rs.getInt("id"));
+    result.setTitle(rs.getString("title"));
     result.setCreatedAt(rs.getTimestamp("createdAt"));
     result.setEndsAt(rs.getTimestamp("endsAt"));
     result.setNote(rs.getString("note"));
@@ -23,17 +24,18 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
   @Override
   public Result create(Result result) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Result\" (createdAt, endsAt, note, tag, goalId) " +
-        "VALUES (?, ?, ?, ?, ?) RETURNING id";
+    String query = "INSERT INTO \"Result\" (title, createdAt, endsAt, note, tag, goalId) " +
+        "VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
 
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
 
-      pstmt.setTimestamp(1, result.getCreatedAt());
-      pstmt.setTimestamp(2, result.getEndsAt());
-      pstmt.setString(3, result.getNote());
-      pstmt.setString(4, result.getTag());
-      pstmt.setInt(5, result.getGoalId());
+        pstmt.setString(1, result.getTitle());
+      pstmt.setTimestamp(2, result.getCreatedAt());
+      pstmt.setTimestamp(3, result.getEndsAt());
+      pstmt.setString(4, result.getNote());
+      pstmt.setString(5, result.getTag());
+      pstmt.setInt(6, result.getGoalId());
 
       pstmt.executeUpdate();
 
