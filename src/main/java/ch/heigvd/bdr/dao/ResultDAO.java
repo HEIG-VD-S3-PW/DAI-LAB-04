@@ -8,6 +8,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ResultDAO implements GenericDAO<Result, Integer> {
+  public Result mapToResult(ResultSet rs) throws SQLException {
+    Result result = new Result();
+
+    result.setId(rs.getInt("id"));
+    result.setCreatedAt(rs.getTimestamp("createdAt"));
+    result.setEndsAt(rs.getTimestamp("endsAt"));
+    result.setNote(rs.getString("note"));
+    result.setTag(rs.getString("tag"));
+    result.setGoalId(rs.getInt("goalId"));
+
+    return result;
+  }
+
   @Override
   public Result create(Result result) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Result\" (createdAt, endsAt, note, tag, goalId) " +
@@ -43,7 +56,7 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         if (rs.next()) {
-          Result r = mapResultFromResultSet(rs);
+          Result r = mapToResult(rs);
           GoalDAO goalDAO = new GoalDAO();
 
           r.setGoal(goalDAO.findById(r.getGoalId()));
@@ -64,7 +77,7 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
         ResultSet rs = stmt.executeQuery(query)) {
 
       while (rs.next()) {
-        Result r = mapResultFromResultSet(rs);
+        Result r = mapToResult(rs);
         GoalDAO goalDAO = new GoalDAO();
 
         r.setGoal(goalDAO.findById(r.getGoalId()));
@@ -116,7 +129,7 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          results.add(mapResultFromResultSet(rs));
+          results.add(mapToResult(rs));
         }
       }
       return results;
@@ -134,17 +147,8 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          Task task = new Task();
-          task.setId(rs.getInt("id"));
-          task.setStartsAt(rs.getTimestamp("startsAt"));
-          task.setProgress(rs.getShort("progress"));
-          task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
-          task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
-          task.setNote(rs.getString("note"));
-          task.setTag(rs.getString("tag"));
-          task.setIsRequired(rs.getBoolean("isRequired"));
-          task.setRequiredTaskId(rs.getObject("requiredTaskId", Integer.class));
-          task.setResultId(rs.getInt("resultId"));
+          TaskDAO taskDAO = new TaskDAO();
+          Task task = taskDAO.mapToTask(rs);
           tasks.add(task);
         }
       }
@@ -164,7 +168,7 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          results.add(mapResultFromResultSet(rs));
+          results.add(mapToResult(rs));
         }
       }
       return results;
@@ -182,21 +186,11 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          results.add(mapResultFromResultSet(rs));
+          results.add(mapToResult(rs));
         }
       }
       return results;
     }
   }
 
-  private Result mapResultFromResultSet(ResultSet rs) throws SQLException {
-    Result result = new Result();
-    result.setId(rs.getInt("id"));
-    result.setCreatedAt(rs.getTimestamp("createdAt"));
-    result.setEndsAt(rs.getTimestamp("endsAt"));
-    result.setNote(rs.getString("note"));
-    result.setTag(rs.getString("tag"));
-    result.setGoalId(rs.getInt("goalId"));
-    return result;
-  }
 }
