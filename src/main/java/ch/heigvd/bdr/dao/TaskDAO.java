@@ -13,6 +13,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     Task task = new Task();
 
     task.setId(rs.getInt("id"));
+    task.setTitle(rs.getString("title"));
     task.setStartsAt(rs.getTimestamp("startsAt"));
     task.setDone(rs.getBoolean("done"));
     task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
@@ -26,18 +27,19 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
   @Override
   public Task create(Task task) throws ClassNotFoundException, SQLException, IOException {
-    String query = "INSERT INTO \"Task\" (startsAt, done, priority, deadline, note, tag, resultId) "
+    String query = "INSERT INTO \"Task\" (title, startsAt, done, priority, deadline, note, tag, resultId) "
         +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        "VALUES (?, ?, ?, ?::\"TaskPriority\", ?::\"TaskDeadline\", ?, ?, ?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
-      pstmt.setTimestamp(1, task.getStartsAt());
-      pstmt.setBoolean(2, task.getDone());
-      pstmt.setString(3, task.getPriority().name());
-      pstmt.setString(4, task.getDeadline().name());
-      pstmt.setString(5, task.getNote());
-      pstmt.setString(6, task.getTag());
-      pstmt.setInt(7, task.getResultId());
+        pstmt.setString(1, task.getTitle());
+      pstmt.setTimestamp(2, task.getStartsAt());
+      pstmt.setBoolean(3, task.getDone());
+      pstmt.setString(4, task.getPriority().name());
+      pstmt.setString(5, task.getDeadline().name());
+      pstmt.setString(6, task.getNote());
+      pstmt.setString(7, task.getTag());
+      pstmt.setInt(8, task.getResultId());
       pstmt.executeUpdate();
 
       try (ResultSet rs = pstmt.getGeneratedKeys()) {
