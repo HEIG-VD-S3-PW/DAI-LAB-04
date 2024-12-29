@@ -151,13 +151,11 @@ public class TeamController implements ResourceControllerInterface {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
 
     // Vérifier si l'équipe existe
-    /*
     Team team = teamDAO.findById(teamId);
     if (team == null) {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
       return;
-    }*/
-
+    }
     // Récupérer les utilisateurs de l'équipe
     List<User> users = userTeamDAO.getTeamMembers(teamId);
     ctx.json(users);

@@ -35,6 +35,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     String query = "SELECT * FROM \"Team\" WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
+
       pstmt.setInt(1, id);
 
       try (ResultSet rs = pstmt.executeQuery()) {
@@ -42,7 +43,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
           Team team = new Team();
           team.setId(rs.getInt("id"));
           team.setName(rs.getString("name"));
-          team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
+          // team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
           return team;
         }
       }
