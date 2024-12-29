@@ -11,6 +11,8 @@ import io.javalin.openapi.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class TeamController implements ResourceControllerInterface {
@@ -92,12 +94,13 @@ public class TeamController implements ResourceControllerInterface {
           @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(ctx.header("User-ID"));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("User-ID")));
 
     // Vérifier si l'utilisateur est déjà membre de l'équipe
     if (userTeamDAO.isUserInTeam(userId, teamId)) {
-      ctx.status(400).json("User is already a member of the team");
+      ctx.status(400).json(Map.of("message", "User is already a member of the team"));
       return;
     }
 
@@ -105,7 +108,7 @@ public class TeamController implements ResourceControllerInterface {
     UserTeam userTeam = new UserTeam(userId, teamId);
     userTeamDAO.create(userTeam);
 
-    ctx.status(200).json("User joined the team successfully");
+    ctx.status(200).json(Map.of("message", "User joined the team successfully"));
   }
 
   @OpenApi(path = "/teams/{id}/leave", methods = HttpMethod.POST, operationId = "leaveTeam", summary = "Leave a team", description = "Allows a user to leave a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
@@ -116,18 +119,18 @@ public class TeamController implements ResourceControllerInterface {
   })
   public void leave(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(ctx.header("User-ID"));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("User-ID")));
 
     // Vérifier si l'utilisateur est membre de l'équipe
     if (!userTeamDAO.isUserInTeam(userId, teamId)) {
-      ctx.status(400).json("User is not a member of the team");
+      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
       return;
     }
 
     // Retirer l'utilisateur de l'équipe
     userTeamDAO.deleteByUserAndTeam(userId, teamId);
 
-    ctx.status(200).json("User left the team successfully");
+    ctx.status(200).json(Map.of("message", "User left the team successfully"));
   }
 
   @OpenApi(
