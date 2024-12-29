@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 
 public class Task {
   private int id;
+  private String title;
   private Timestamp startsAt;
   private boolean done;
   private String note;
@@ -15,10 +16,11 @@ public class Task {
   public Task() {
   }
 
-  public Task(int id, Timestamp startsAt, boolean done, TaskPriority priority,
+  public Task(int id, String title, Timestamp startsAt, boolean done, TaskPriority priority,
       TaskDeadline deadline, String note, String tag,
       int resultId) {
     this.id = id;
+    this.title = title;
     this.startsAt = startsAt;
     this.done = done;
     this.priority = priority;
@@ -35,6 +37,14 @@ public class Task {
 
   public void setId(int id) {
     this.id = id;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public void setTitle(String title) {
+    this.title = title;
   }
 
   public Timestamp getStartsAt() {

@@ -27,9 +27,9 @@ public class TaskController implements ResourceControllerInterface {
     ctx.json(taskDAO.findAll());
   }
 
-  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", responses = {
-      @OpenApiResponse(status = "200", description = "List of tasks", content = @OpenApiContent(from = Task.class)),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
+          @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class)),
+          @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
