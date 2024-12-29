@@ -131,64 +131,87 @@ CREATE TABLE "Task_Subtask" (
 	CONSTRAINT UC_Task_taskId_subtaskId UNIQUE(taskId, subtaskId)
 );
 
--- Check for circular dependencies
 CREATE OR REPLACE FUNCTION check_task_subtask_relation()
 RETURNS TRIGGER AS $$
 DECLARE
-    circular_dependency_exists BOOLEAN := FALSE;
+circular_dependency_exists BOOLEAN := FALSE;
 BEGIN
-    SELECT EXISTS(
-        WITH RECURSIVE Subtasks AS (
-            SELECT subtaskid FROM "Task_Subtask" WHERE taskid = NEW.taskid
+    -- Vérifier si la nouvelle sous-tâche crée une dépendance circulaire
+WITH RECURSIVE TaskHierarchy AS (
+    -- Départ : sous-tâches directes de la nouvelle sous-tâche
+    SELECT taskid, subtaskid
+    FROM "Task_Subtask"
+    WHERE taskid = NEW.subtaskid
 
-            UNION ALL
-              SELECT ts.subtaskid
-              FROM "Task_Subtask" ts
-              INNER JOIN Subtasks st ON st.subtaskid = ts.taskid
-        )
-        SELECT 1 FROM Subtasks WHERE subtaskid = NEW.subtaskid
-    ) INTO circular_dependency_exists;
+    UNION ALL
 
-    IF circular_dependency_exists THEN
-        RAISE EXCEPTION 'Cannot insert: circular dependency detected. Task % is already a subtask of %.', NEW.subtaskid, NEW.taskid;
-    END IF;
+    -- Récursion : remonter l'arbre des tâches
+    SELECT ts.taskid, ts.subtaskid
+    FROM "Task_Subtask" ts
+             INNER JOIN TaskHierarchy th ON ts.taskid = th.subtaskid
+)
+SELECT EXISTS (
+    SELECT 1
+    FROM TaskHierarchy
+    WHERE subtaskid = NEW.taskid
+) INTO circular_dependency_exists;
 
-    RETURN NEW;
+-- Si une dépendance circulaire est détectée, lever une exception
+IF circular_dependency_exists THEN
+        RAISE EXCEPTION 'Cannot insert: circular dependency detected between tasks % and %',
+                       NEW.taskid, NEW.subtaskid;
+END IF;
+
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER check_circular_dependency
-BEFORE INSERT ON "Task_Subtask"
-FOR EACH ROW
-EXECUTE FUNCTION check_task_subtask_relation();
+    BEFORE INSERT ON "Task_Subtask"
+    FOR EACH ROW
+    EXECUTE FUNCTION check_task_subtask_relation();
 
--- check for dependencies when marking task as done
+
 CREATE OR REPLACE FUNCTION check_dependencies_on_task_done()
 RETURNS TRIGGER AS $$
 DECLARE
-    pending_required_dependencies BOOLEAN := FALSE;
+pending_required_dependencies BOOLEAN := FALSE;
 BEGIN
-    SELECT EXISTS(
-        SELECT 1 AS exist
-        FROM "Task_Subtask" ts
-		INNER JOIN "Task" st ON ts.subtaskId = st.id
-        WHERE ts.taskId = NEW.id 
-          AND ts.required IS TRUE 
-          AND st.done IS NOT TRUE
-    ) INTO pending_required_dependencies;
+    -- Vérifier si des dépendances requises ne sont pas terminées
+WITH RECURSIVE TaskDependencies AS (
+    -- Départ : dépendances directes de la tâche
+    SELECT ts.subtaskId
+    FROM "Task_Subtask" ts
+    WHERE ts.taskId = NEW.id AND ts.required IS TRUE
 
-    IF pending_required_dependencies THEN
-        RAISE EXCEPTION 'Cannot mark task as done: direct dependencies still not done.';
-    END IF;
+    UNION ALL
 
-    RETURN NEW;
+    -- Récursion : dépendances indirectes
+    SELECT ts.subtaskId
+    FROM "Task_Subtask" ts
+             INNER JOIN TaskDependencies td ON ts.taskId = td.subtaskId
+    WHERE ts.required IS TRUE
+)
+SELECT EXISTS(
+    SELECT 1
+    FROM TaskDependencies td
+             INNER JOIN "Task" t ON td.subtaskId = t.id
+    WHERE t.done IS NOT TRUE
+) INTO pending_required_dependencies;
+
+-- Si des dépendances ne sont pas terminées, lever une exception
+IF pending_required_dependencies THEN
+        RAISE EXCEPTION 'Cannot mark task as done: dependencies still not done.';
+END IF;
+
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER check_on_task_done
-BEFORE UPDATE ON "Task"
-FOR EACH ROW
-WHEN (OLD.done IS DISTINCT FROM NEW.done)
+    BEFORE UPDATE ON "Task"
+    FOR EACH ROW
+    WHEN (OLD.done IS DISTINCT FROM NEW.done)
 EXECUTE FUNCTION check_dependencies_on_task_done();
 
 CREATE TABLE "Task_CollaboratorNeed" (
