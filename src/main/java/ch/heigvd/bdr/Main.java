@@ -136,6 +136,10 @@ public final class Main /*implements Handler*/ {
     app.post("/teams", teamController::create);
     app.put("/teams/{id}", teamController::update);
     app.delete("/teams/{id}", teamController::delete);
+    app.post("/teams/{id}/join", teamController::join);
+    app.post("/teams/{id}/leave", teamController::leave);
+    app.get("/teams/{id}/users", teamController::getTeamMembers);
+
 
     ProjectController projectController = new ProjectController();
     app.get("/projects", projectController::all);
