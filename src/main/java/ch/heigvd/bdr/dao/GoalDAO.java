@@ -143,7 +143,8 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
           goal.setDescription(rs.getString("description"));
           goal.setTag(rs.getString("tag"));
           goal.setNote(rs.getString("note"));
-
+          goal.setProjectId(rs.getInt("projectId"));
+          goal.setTeamId(rs.getInt("teamId"));
           goals.add(goal);
         }
       }
