@@ -1,5 +1,6 @@
 package ch.heigvd.bdr.controllers;
 
+import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.dao.UserTeamDAO;
 import ch.heigvd.bdr.models.User;
 import ch.heigvd.bdr.models.UserTeam;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class TeamController implements ResourceControllerInterface {
   private final TeamDAO teamDAO = new TeamDAO();
   private final UserTeamDAO userTeamDAO = new UserTeamDAO();
+  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", responses = {
       @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team.class)),
@@ -25,7 +27,18 @@ public class TeamController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    ctx.json(teamDAO.findAll());
+    // ctx.json(teamDAO.findAll());
+
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    User user = userDAO.findById(userId);
+    if (user == null) {
+      ctx.status(404).json("User not found");
+      return;
+    }
+
+    List<Team> teams = userDAO.getTeams(user.getId());
+    ctx.json(teams);
+
   }
 
   @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
@@ -95,8 +108,10 @@ public class TeamController implements ResourceControllerInterface {
   })
   public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
 
+    ctx.headerMap().forEach((key, value) -> System.out.println(key + " : " + value));
+
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("User-ID")));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
 
     // Vérifier si l'utilisateur est déjà membre de l'équipe
     if (userTeamDAO.isUserInTeam(userId, teamId)) {
@@ -119,7 +134,7 @@ public class TeamController implements ResourceControllerInterface {
   })
   public void leave(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("User-ID")));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
 
     // Vérifier si l'utilisateur est membre de l'équipe
     if (!userTeamDAO.isUserInTeam(userId, teamId)) {

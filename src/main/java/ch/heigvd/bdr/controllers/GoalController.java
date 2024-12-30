@@ -1,6 +1,9 @@
 
 package ch.heigvd.bdr.controllers;
 
+import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.models.Team;
+import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.GoalDAO;
 import ch.heigvd.bdr.models.Goal;
@@ -8,10 +11,13 @@ import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class GoalController implements ResourceControllerInterface {
   private final GoalDAO goalDAO = new GoalDAO();
+  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals", description = "Returns a list of all goals.", tags = "Goals", responses = {
       @OpenApiResponse(status = "200", description = "List of all goals", content = @OpenApiContent(from = Goal.class)),
@@ -19,7 +25,17 @@ public class GoalController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    ctx.json(goalDAO.findAll());
+    // ctx.json(goalDAO.findAll());
+
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    User user = userDAO.findById(userId);
+    if (user == null) {
+      ctx.status(404).json("User not found");
+      return;
+    }
+
+    List<Goal> goals = userDAO.getGoals(user.getId());
+    ctx.json(goals);
   }
 
   @OpenApi(path = "/goals", methods = HttpMethod.POST, operationId = "createGoal", summary = "Create a new goal", description = "Creates a new goal.", tags = "Goals", requestBody = @OpenApiRequestBody(description = "Goal details", content = @OpenApiContent(from = Goal.class)), responses = {
