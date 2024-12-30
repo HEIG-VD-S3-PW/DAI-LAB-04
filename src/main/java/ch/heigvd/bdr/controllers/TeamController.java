@@ -27,23 +27,7 @@ public class TeamController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    // ctx.json(teamDAO.findAll());
-
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-    if (userId == 0) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
-    }
-
-    User user = userDAO.findById(userId);
-    if (user == null) {
-      ctx.status(404).json("User not found");
-      return;
-    }
-
-    List<Team> teams = userDAO.getTeams(user.getId());
-    ctx.json(teams);
-
+    ctx.json(teamDAO.findAll());
   }
 
   @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {

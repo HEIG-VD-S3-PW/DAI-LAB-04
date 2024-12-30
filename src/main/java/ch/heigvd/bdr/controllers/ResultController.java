@@ -1,6 +1,7 @@
 
 package ch.heigvd.bdr.controllers;
 
+import ch.heigvd.bdr.dao.UserDAO;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.ResultDAO;
 import ch.heigvd.bdr.models.*;
@@ -8,10 +9,14 @@ import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class ResultController implements ResourceControllerInterface {
   private final ResultDAO resultDAO = new ResultDAO();
+  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/results", methods = HttpMethod.GET, operationId = "getAllResults", summary = "Get all results", description = "Returns a list of all results.", tags = "Results", responses = {
       @OpenApiResponse(status = "200", description = "List of all results", content = @OpenApiContent(from = Result.class)),
@@ -19,7 +24,22 @@ public class ResultController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    ctx.json(resultDAO.findAll());
+    // ctx.json(resultDAO.findAll());
+
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    if (userId == 0) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
+    User user = userDAO.findById(userId);
+    if (user == null) {
+      ctx.status(404).json("User not found");
+      return;
+    }
+
+    List<Result> results = userDAO.getResults(user.getId());
+    ctx.json(results);
   }
 
   @OpenApi(path = "/results", methods = HttpMethod.POST, operationId = "createResult", summary = "Create a new result", description = "Creates a new result.", tags = "Results", requestBody = @OpenApiRequestBody(description = "Result details", content = @OpenApiContent(from = Result.class)), responses = {

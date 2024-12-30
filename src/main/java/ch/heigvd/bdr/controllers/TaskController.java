@@ -2,12 +2,13 @@ package ch.heigvd.bdr.controllers;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import ch.heigvd.bdr.dao.TaskDAO;
+import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.Task;
+import ch.heigvd.bdr.models.Team;
+import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
@@ -18,6 +19,7 @@ import io.javalin.openapi.OpenApiResponse;
 
 public class TaskController implements ResourceControllerInterface {
   private final TaskDAO taskDAO = new TaskDAO();
+  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", responses = {
       @OpenApiResponse(status = "200", description = "List of tasks", content = @OpenApiContent(from = Task.class)),
@@ -25,7 +27,23 @@ public class TaskController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    ctx.json(taskDAO.findAll());
+    // ctx.json(taskDAO.findAll());
+
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    if (userId == 0) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
+    User user = userDAO.findById(userId);
+    if (user == null) {
+      ctx.status(404).json("User not found");
+      return;
+    }
+
+    List<Task> tasks = userDAO.getTasks(user.getId());
+    ctx.json(tasks);
+
   }
 
   @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
