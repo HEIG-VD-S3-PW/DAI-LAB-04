@@ -6,6 +6,7 @@ import io.javalin.openapi.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import ch.heigvd.bdr.dao.ProjectDAO;
@@ -57,7 +58,7 @@ public class ProjectController implements ResourceControllerInterface {
     if (project != null) {
       ctx.json(project);
     } else {
-      ctx.status(404).json("Project not found");
+      ctx.status(404).json(Map.of("message", "Project not found"));
     }
   }
 
@@ -81,6 +82,7 @@ public class ProjectController implements ResourceControllerInterface {
       @OpenApiResponse(status = "404", description = "User not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
+
   // Delete a project
   @Override
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
@@ -90,7 +92,7 @@ public class ProjectController implements ResourceControllerInterface {
     if (deleted) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Project not found");
+      ctx.status(404).json(Map.of("message", "Project not found"));
     }
   }
 }

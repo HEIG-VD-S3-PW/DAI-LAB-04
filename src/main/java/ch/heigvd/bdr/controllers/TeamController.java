@@ -19,7 +19,6 @@ import java.util.UUID;
 public class TeamController implements ResourceControllerInterface {
   private final TeamDAO teamDAO = new TeamDAO();
   private final UserTeamDAO userTeamDAO = new UserTeamDAO();
-  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", responses = {
       @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team.class)),
@@ -52,7 +51,7 @@ public class TeamController implements ResourceControllerInterface {
     if (team != null) {
       ctx.json(team);
     } else {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
     }
   }
 
@@ -70,7 +69,7 @@ public class TeamController implements ResourceControllerInterface {
     if (updatedTeam != null) {
       ctx.json(updatedTeam);
     } else {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
     }
   }
 
@@ -85,7 +84,7 @@ public class TeamController implements ResourceControllerInterface {
     if (teamDAO.delete(id)) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
     }
   }
 
@@ -96,8 +95,6 @@ public class TeamController implements ResourceControllerInterface {
           @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-
-    ctx.headerMap().forEach((key, value) -> System.out.println(key + " : " + value));
 
     int teamId = Integer.parseInt(ctx.pathParam("id"));
     int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));

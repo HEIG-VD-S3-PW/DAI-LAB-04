@@ -37,11 +37,11 @@ public class TaskController implements ResourceControllerInterface {
 
     User user = userDAO.findById(userId);
     if (user == null) {
-      ctx.status(404).json("User not found");
+      ctx.status(404).json(Map.of("message", "User not found"));
       return;
     }
 
-    List<Task> tasks = userDAO.getTasks(user.getId());
+    List<Task> tasks = taskDAO.getTasksByUserID(user.getId());
     ctx.json(tasks);
 
   }

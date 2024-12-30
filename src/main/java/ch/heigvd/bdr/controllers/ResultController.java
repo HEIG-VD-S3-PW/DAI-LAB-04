@@ -34,11 +34,11 @@ public class ResultController implements ResourceControllerInterface {
 
     User user = userDAO.findById(userId);
     if (user == null) {
-      ctx.status(404).json("User not found");
+      ctx.status(404).json(Map.of("message", "User not found"));
       return;
     }
 
-    List<Result> results = userDAO.getResults(user.getId());
+    List<Result> results = resultDAO.getResultsByUserID(user.getId());
     ctx.json(results);
   }
 
@@ -64,7 +64,7 @@ public class ResultController implements ResourceControllerInterface {
     if (result != null) {
       ctx.json(result);
     } else {
-      ctx.status(404).json("Result not found");
+      ctx.status(404).json(Map.of("message", "Result not found"));
     }
   }
 
@@ -82,7 +82,7 @@ public class ResultController implements ResourceControllerInterface {
     if (updatedResult != null) {
       ctx.json(updatedResult);
     } else {
-      ctx.status(404).json("Result not found");
+      ctx.status(404).json(Map.of("message", "Result not found"));
     }
   }
 
@@ -97,7 +97,7 @@ public class ResultController implements ResourceControllerInterface {
     if (resultDAO.delete(id)) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Result not found");
+      ctx.status(404).json(Map.of("message", "Result not found"));
     }
   }
 }

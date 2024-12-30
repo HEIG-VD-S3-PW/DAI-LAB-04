@@ -41,7 +41,7 @@ public class GoalController implements ResourceControllerInterface {
       return;
     }
 
-    List<Goal> goals = userDAO.getGoals(user.getId());
+    List<Goal> goals = goalDAO.getGoalsByUserID(user.getId());
     ctx.json(goals);
   }
 
