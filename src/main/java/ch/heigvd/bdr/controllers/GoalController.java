@@ -12,6 +12,7 @@ import io.javalin.openapi.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,9 +29,15 @@ public class GoalController implements ResourceControllerInterface {
     // ctx.json(goalDAO.findAll());
 
     int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+
+    if (userId == 0) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
     User user = userDAO.findById(userId);
     if (user == null) {
-      ctx.status(404).json("User not found");
+      ctx.status(404).json(Map.of("message", "User not found"));
       return;
     }
 
@@ -60,7 +67,7 @@ public class GoalController implements ResourceControllerInterface {
     if (goal != null) {
       ctx.json(goal);
     } else {
-      ctx.status(404).json("Goal not found");
+      ctx.status(404).json(Map.of("message", "Goal not found"));
     }
   }
 
@@ -79,7 +86,7 @@ public class GoalController implements ResourceControllerInterface {
     if (updatedGoal != null) {
       ctx.json(updatedGoal);
     } else {
-      ctx.status(404).json("Goal not found");
+      ctx.status(404).json(Map.of("message", "Goal not found"));
     }
   }
 
@@ -94,7 +101,7 @@ public class GoalController implements ResourceControllerInterface {
     if (goalDAO.delete(id)) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Goal not found");
+      ctx.status(404).json(Map.of("message", "Goal not found"));
     }
   }
 }

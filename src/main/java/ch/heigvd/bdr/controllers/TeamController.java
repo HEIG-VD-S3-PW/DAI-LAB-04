@@ -30,6 +30,11 @@ public class TeamController implements ResourceControllerInterface {
     // ctx.json(teamDAO.findAll());
 
     int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    if (userId == 0) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
     User user = userDAO.findById(userId);
     if (user == null) {
       ctx.status(404).json("User not found");

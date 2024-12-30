@@ -124,8 +124,6 @@ public final class Main /*implements Handler*/ {
     UserController userController = new UserController();
     app.get("/users", userController::all);
     app.get("/users/{id}", userController::show);
-    app.get("/users/{id}/goals", userController::goals);
-    app.get("/users/{id}/teams", userController::teams);
     app.post("/users", userController::create);
     app.put("/users/{id}", userController::update);
     app.delete("/users/{id}", userController::delete);
