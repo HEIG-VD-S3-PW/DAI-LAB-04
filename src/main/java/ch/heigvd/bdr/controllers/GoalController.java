@@ -20,13 +20,14 @@ public class GoalController implements ResourceControllerInterface {
   private final GoalDAO goalDAO = new GoalDAO();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals", description = "Returns a list of all goals.", tags = "Goals", responses = {
+  @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals", description = "Returns a list of all goals.", tags = "Goals", headers = {
+      @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+  }, responses = {
       @OpenApiResponse(status = "200", description = "List of all goals", content = @OpenApiContent(from = Goal.class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    // ctx.json(goalDAO.findAll());
 
     int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
 

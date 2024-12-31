@@ -170,4 +170,28 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+    public List<User> getMembers(int id) throws Exception {
+        List<User> members = new ArrayList<>();
+        String query = "SELECT u.* FROM \"User\" u " +
+                "JOIN \"User_Team\" ut ON u.id = ut.userId " +
+                "WHERE ut.teamId = ?";
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, id);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    User user = new User();
+                    user.setId(rs.getInt("id"));
+                    user.setFirstname(rs.getString("firstname"));
+                    user.setLastname(rs.getString("lastname"));
+                    user.setEmail(rs.getString("email"));
+                    user.setRole(UserRole.valueOf(rs.getString("role")));
+                    members.add(user);
+                }
+            }
+        }
+        return members;
+    }
+
 }

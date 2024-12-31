@@ -118,5 +118,36 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+    public void joinTeam(int userId, int teamId) throws SQLException, IOException, ClassNotFoundException {
+        String query = "INSERT INTO \"User_Team\" (userId, teamId) VALUES (?, ?)";
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, teamId);
+            pstmt.executeUpdate();
+        }
+    }
+
+    public void leaveTeam(int userId, int teamId) throws SQLException, IOException, ClassNotFoundException {
+        String query = "DELETE FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, teamId);
+            pstmt.executeUpdate();
+        }
+    }
+
+    public boolean belongsToTeam(int userId, int teamId) throws SQLException, IOException, ClassNotFoundException {
+        String query = "SELECT 1 FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, teamId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
 
 }

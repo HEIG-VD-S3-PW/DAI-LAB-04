@@ -18,14 +18,14 @@ public class ResultController implements ResourceControllerInterface {
   private final ResultDAO resultDAO = new ResultDAO();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/results", methods = HttpMethod.GET, operationId = "getAllResults", summary = "Get all results", description = "Returns a list of all results.", tags = "Results", responses = {
+  @OpenApi(path = "/results", methods = HttpMethod.GET, operationId = "getAllResults", summary = "Get all results", description = "Returns a list of all results.", tags = "Results", headers = {
+      @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+  }, responses = {
       @OpenApiResponse(status = "200", description = "List of all results", content = @OpenApiContent(from = Result.class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    // ctx.json(resultDAO.findAll());
-
     int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
     if (userId == 0) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));

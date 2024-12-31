@@ -21,14 +21,14 @@ public class TaskController implements ResourceControllerInterface {
   private final TaskDAO taskDAO = new TaskDAO();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", responses = {
+  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", headers = {
+      @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+  }, responses = {
       @OpenApiResponse(status = "200", description = "List of tasks", content = @OpenApiContent(from = Task.class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    // ctx.json(taskDAO.findAll());
-
     int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
     if (userId == 0) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
@@ -47,8 +47,8 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
-          @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class)),
-          @OpenApiResponse(status = "500", description = "Internal Server Error")
+      @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class)),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
