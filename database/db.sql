@@ -131,46 +131,36 @@ CREATE TABLE "Task_Subtask" (
 	CONSTRAINT UC_Task_taskId_subtaskId UNIQUE(taskId, subtaskId)
 );
 
+-- Check for circular dependencies
 CREATE OR REPLACE FUNCTION check_task_subtask_relation()
 RETURNS TRIGGER AS $$
 DECLARE
-circular_dependency_exists BOOLEAN := FALSE;
+    circular_dependency_exists BOOLEAN := FALSE;
 BEGIN
-    -- Vérifier si la nouvelle sous-tâche crée une dépendance circulaire
-WITH RECURSIVE TaskHierarchy AS (
-    -- Départ : sous-tâches directes de la nouvelle sous-tâche
-    SELECT taskid, subtaskid
-    FROM "Task_Subtask"
-    WHERE taskid = NEW.subtaskid
+    SELECT EXISTS(
+        WITH RECURSIVE Subtasks AS (
+            SELECT subtaskid FROM "Task_Subtask" WHERE taskid = NEW.taskid
 
-    UNION ALL
+            UNION ALL
+              SELECT ts.subtaskid
+              FROM "Task_Subtask" ts
+              INNER JOIN Subtasks st ON st.subtaskid = ts.taskid
+        )
+        SELECT 1 FROM Subtasks WHERE subtaskid = NEW.subtaskid
+    ) INTO circular_dependency_exists;
 
-    -- Récursion : remonter l'arbre des tâches
-    SELECT ts.taskid, ts.subtaskid
-    FROM "Task_Subtask" ts
-             INNER JOIN TaskHierarchy th ON ts.taskid = th.subtaskid
-)
-SELECT EXISTS (
-    SELECT 1
-    FROM TaskHierarchy
-    WHERE subtaskid = NEW.taskid
-) INTO circular_dependency_exists;
+    IF circular_dependency_exists THEN
+        RAISE EXCEPTION 'Cannot insert: circular dependency detected. Task % is already a subtask of %.', NEW.subtaskid, NEW.taskid;
+    END IF;
 
--- Si une dépendance circulaire est détectée, lever une exception
-IF circular_dependency_exists THEN
-        RAISE EXCEPTION 'Cannot insert: circular dependency detected between tasks % and %',
-                       NEW.taskid, NEW.subtaskid;
-END IF;
-
-RETURN NEW;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER check_circular_dependency
-    BEFORE INSERT ON "Task_Subtask"
-    FOR EACH ROW
-    EXECUTE FUNCTION check_task_subtask_relation();
-
+BEFORE INSERT ON "Task_Subtask"
+FOR EACH ROW
+EXECUTE FUNCTION check_task_subtask_relation();
 
 CREATE OR REPLACE FUNCTION check_dependencies_on_task_done()
 RETURNS TRIGGER AS $$
