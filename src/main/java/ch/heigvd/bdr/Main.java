@@ -37,7 +37,7 @@ import io.javalin.security.RouteRole;
  */
 @SuppressWarnings({ "unused", "LombokGetterMayBeUsed", "LombokSetterMayBeUsed", "ProtectedMemberInFinalClass",
     "InnerClassMayBeStatic" })
-public final class Main implements Handler {
+public final class Main /*implements Handler*/ {
 
   enum Rules implements RouteRole {
     ANONYMOUS,

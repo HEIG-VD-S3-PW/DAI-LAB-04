@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 
 public class Result {
   private int id;
+  private String title;
   private Timestamp createdAt;
   private Timestamp endsAt;
   private String note;
@@ -14,8 +15,9 @@ public class Result {
   public Result() {
   }
 
-  public Result(int id, Timestamp createdAt, Timestamp endsAt, String note, String tag, int goalId) {
+  public Result(int id, String title, Timestamp createdAt, Timestamp endsAt, String note, String tag, int goalId) {
     this.id = id;
+    this.title = title;
     this.createdAt = createdAt;
     this.endsAt = endsAt;
     this.note = note;
@@ -30,6 +32,14 @@ public class Result {
 
   public void setId(int id) {
     this.id = id;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public void setTitle(String title) {
+    this.title = title;
   }
 
   public Timestamp getCreatedAt() {
