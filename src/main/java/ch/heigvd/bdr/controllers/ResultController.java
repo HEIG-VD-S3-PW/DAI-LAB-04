@@ -52,7 +52,7 @@ public class ResultController implements ResourceControllerInterface {
     ctx.status(201).json(resultDAO.create(result));
   }
 
-  @OpenApi(path = "/results/{id}", methods = HttpMethod.GET, operationId = "getResultById", summary = "Get result by ID", description = "Fetches a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = Integer.class), responses = {
+  @OpenApi(path = "/results/{id}", methods = HttpMethod.GET, operationId = "getResultById", summary = "Get result by ID", description = "Fetches a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "Result found", content = @OpenApiContent(from = Result.class)),
       @OpenApiResponse(status = "404", description = "Result not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
@@ -68,7 +68,7 @@ public class ResultController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/results/{id}", methods = HttpMethod.PUT, operationId = "updateResult", summary = "Update result by ID", description = "Updates a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = Integer.class), requestBody = @OpenApiRequestBody(description = "Updated result details", content = @OpenApiContent(from = Result.class)), responses = {
+  @OpenApi(path = "/results/{id}", methods = HttpMethod.PUT, operationId = "updateResult", summary = "Update result by ID", description = "Updates a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated result details", content = @OpenApiContent(from = Result.class)), responses = {
       @OpenApiResponse(status = "200", description = "Result updated successfully", content = @OpenApiContent(from = Result.class)),
       @OpenApiResponse(status = "404", description = "Result not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
@@ -86,7 +86,7 @@ public class ResultController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/results/{id}", methods = HttpMethod.DELETE, operationId = "deleteResult", summary = "Delete result by ID", description = "Deletes a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = Integer.class), responses = {
+  @OpenApi(path = "/results/{id}", methods = HttpMethod.DELETE, operationId = "deleteResult", summary = "Delete result by ID", description = "Deletes a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "204", description = "Result deleted successfully"),
       @OpenApiResponse(status = "404", description = "Result not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")

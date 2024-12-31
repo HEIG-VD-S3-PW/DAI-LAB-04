@@ -21,7 +21,7 @@ public class ProjectController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/projects", methods = HttpMethod.GET, operationId = "getAllProjects", summary = "Get all projects", description = "Returns a list of all projects.", tags = "Projects", responses = {
-      @OpenApiResponse(status = "200", description = "List of all projects", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "200", description = "List of all projects", content = @OpenApiContent(from = Project[].class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   // Retrieve all projects
@@ -44,9 +44,9 @@ public class ProjectController implements ResourceControllerInterface {
     ctx.status(201).json(createdProject);
   }
 
-  @OpenApi(path = "/projects/{id}", methods = HttpMethod.GET, operationId = "getProjectById", summary = "Get project by ID", description = "Fetches a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "User found", content = @OpenApiContent(from = Project.class)),
-      @OpenApiResponse(status = "404", description = "User not found"),
+  @OpenApi(path = "/projects/{id}", methods = HttpMethod.GET, operationId = "getProjectById", summary = "Get project by ID", description = "Fetches a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "Project ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "Project found", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "404", description = "Project not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   // Retrieve a single project by ID
@@ -62,9 +62,9 @@ public class ProjectController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/projects/{id}", methods = HttpMethod.PUT, operationId = "updateProject", summary = "Update project by ID", description = "Updates project information by ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated user details", content = @OpenApiContent(from = Project.class)), responses = {
-      @OpenApiResponse(status = "200", description = "User updated successfully", content = @OpenApiContent(from = Project.class)),
-      @OpenApiResponse(status = "404", description = "User not found"),
+  @OpenApi(path = "/projects/{id}", methods = HttpMethod.PUT, operationId = "updateProject", summary = "Update project by ID", description = "Updates project information by ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "Project ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated user details", content = @OpenApiContent(from = Project.class)), responses = {
+      @OpenApiResponse(status = "200", description = "Project updated successfully", content = @OpenApiContent(from = Project.class)),
+      @OpenApiResponse(status = "404", description = "Project not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   // Update a project
@@ -77,9 +77,9 @@ public class ProjectController implements ResourceControllerInterface {
     ctx.status(204);
   }
 
-  @OpenApi(path = "/projects/{id}", methods = HttpMethod.DELETE, operationId = "deleteProject", summary = "Delete project by ID", description = "Deletes a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "User deleted successfully"),
-      @OpenApiResponse(status = "404", description = "User not found"),
+  @OpenApi(path = "/projects/{id}", methods = HttpMethod.DELETE, operationId = "deleteProject", summary = "Delete project by ID", description = "Deletes a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "Project ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "Project deleted successfully"),
+      @OpenApiResponse(status = "404", description = "Project not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
 

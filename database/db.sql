@@ -91,7 +91,7 @@ CREATE TABLE "Result"(
 	id SERIAL,
     title VARCHAR(150) NOT NULL,
 	createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-	endsAt TIMESTAMP NOT NULL,
+	endsAt TIMESTAMP NULL,
 	note TEXT,
 	tag TEXT,
 	goalId INT NOT NULL,
@@ -111,12 +111,9 @@ CREATE TABLE "Task"(
 	deadline "TaskDeadline" DEFAULT 'THREE_MONTHS',
 	note TEXT,
 	tag TEXT,
-	isRequired BOOL DEFAULT FALSE,
-	requiredTaskId INT NULL,
 	resultId INT NOT NULL,
 	CONSTRAINT PK_Task PRIMARY KEY(id),
 	CONSTRAINT UC_Task_starts_at UNIQUE(startsAt),
-	CONSTRAINT FK_Task_requiredTaskId FOREIGN KEY (requiredTaskId) REFERENCES "Task"(id) ON DELETE SET NULL ON UPDATE CASCADE,
 	CONSTRAINT FK_Task_resultId FOREIGN KEY (resultId) REFERENCES "Result"(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -124,7 +121,7 @@ CREATE TABLE "Task_Subtask" (
 	id SERIAL,
 	taskId INT NOT NULL,
 	subtaskId INT NOT NULL,
-  required BOOL DEFAULT FALSE,
+  	required BOOLEAN DEFAULT FALSE,
 	CONSTRAINT PK_Task_Subtask PRIMARY KEY(id),
 	CONSTRAINT FK_Task_taskId FOREIGN KEY (taskId) REFERENCES "Task"(id) ON DELETE CASCADE ON UPDATE CASCADE,
 	CONSTRAINT FK_Task_subtaskId FOREIGN KEY (subtaskId) REFERENCES "Task"(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -270,3 +267,31 @@ CREATE TRIGGER check_task_dates_trigger
 BEFORE INSERT OR UPDATE ON "Task"
 FOR EACH ROW
 EXECUTE FUNCTION check_task_dates();
+
+-- check when deleting a task if it is the requiredTask of another one that isn't done yet
+
+CREATE OR REPLACE FUNCTION check_task_deletion()
+RETURNS TRIGGER AS $$
+DECLARE
+    dependent_task_ids TEXT; -- Variable to store all dependent task IDs as a comma-separated string
+BEGIN
+    -- Check for all tasks requiring the current task (OLD.id) that are not done
+    SELECT STRING_AGG(id::TEXT, ', ')
+    INTO dependent_task_ids
+    FROM "Task"
+    WHERE requiredTaskId = OLD.id AND done = FALSE;
+
+    IF dependent_task_ids IS NOT NULL THEN
+        RAISE EXCEPTION 'Task cannot be deleted, still required by the following tasks: %.', dependent_task_ids;
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE OR REPLACE TRIGGER taskDeletion 
+BEFORE DELETE ON Task 
+FOR EACH ROW 
+EXECUTE FUNCTION check_task_deletion();

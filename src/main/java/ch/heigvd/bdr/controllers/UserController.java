@@ -18,7 +18,7 @@ public class UserController implements ResourceControllerInterface {
   private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", responses = {
-      @OpenApiResponse(status = "200", description = "List of all users", content = @OpenApiContent(from = User.class)),
+      @OpenApiResponse(status = "200", description = "List of all users", content = @OpenApiContent(from = User[].class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
