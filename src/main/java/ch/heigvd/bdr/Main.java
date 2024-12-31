@@ -31,7 +31,6 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.security.RouteRole;
-import kotlin.Result;
 
 /**
  * Starts Javalin server with OpenAPI plugin
@@ -60,15 +59,8 @@ public final class Main /*implements Handler*/ {
               .withServer(openApiServer -> openApiServer
                   .description("A simple OKR app")
                   .url("http://localhost:{port}{basePath}/" + version + "/")
-                  .variable("port", "Server's port", "7070", "7070")
+                  .variable("port", "Server's port", "7000", "7000")
                   .variable("basePath", "Base path of the server", "", "/"))
-              // Based on official example:
-              // https://swagger.io/docs/specification/authentication/oauth2/
-              .withSecurity(openApiSecurity -> openApiSecurity
-                  .withBasicAuth()
-                  .withBearerAuth()
-                  .withApiKeyAuth("ApiKeyAuth", "X-Api-Key")
-                  .withCookieAuth("CookieAuth", "JSESSIONID"))
               .withDefinitionProcessor(content -> { // you can add whatever you want to this document using your
                                                     // favourite json api
                 content.set("test", new TextNode("Value"));
@@ -170,5 +162,9 @@ public final class Main /*implements Handler*/ {
     app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship);
 
     app.start("0.0.0.0", 7000);
+  }
+
+  @Override
+  public void handle(@NotNull Context ctx) {
   }
 }

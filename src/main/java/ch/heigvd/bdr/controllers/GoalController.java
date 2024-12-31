@@ -5,16 +5,15 @@ import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.GoalDAO;
 import ch.heigvd.bdr.models.Goal;
 import io.javalin.openapi.*;
-
+import java.util.UUID;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.UUID;
 
 public class GoalController implements ResourceControllerInterface {
   private final GoalDAO goalDAO = new GoalDAO();
 
   @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals", description = "Returns a list of all goals.", tags = "Goals", responses = {
-      @OpenApiResponse(status = "200", description = "List of all goals", content = @OpenApiContent(from = Goal.class)),
+      @OpenApiResponse(status = "200", description = "List of all goals", content = @OpenApiContent(from = Goal[].class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
