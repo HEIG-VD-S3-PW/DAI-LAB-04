@@ -116,8 +116,6 @@ public final class Main /*implements Handler*/ {
     UserController userController = new UserController();
     app.get("/users", userController::all);
     app.get("/users/{id}", userController::show);
-    app.get("/users/{id}/goals", userController::goals);
-    app.get("/users/{id}/teams", userController::teams);
     app.post("/users", userController::create);
     app.put("/users/{id}", userController::update);
     app.delete("/users/{id}", userController::delete);
@@ -128,6 +126,10 @@ public final class Main /*implements Handler*/ {
     app.post("/teams", teamController::create);
     app.put("/teams/{id}", teamController::update);
     app.delete("/teams/{id}", teamController::delete);
+    app.post("/teams/{id}/join", teamController::join);
+    app.post("/teams/{id}/leave", teamController::leave);
+    app.get("/teams/{id}/users", teamController::getTeamMembers);
+
 
     ProjectController projectController = new ProjectController();
     app.get("/projects", projectController::all);

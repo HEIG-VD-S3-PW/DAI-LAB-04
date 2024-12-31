@@ -195,4 +195,37 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  public List<Result> getResultsByUserID(int userId) throws ClassNotFoundException, SQLException, IOException {
+    List<Result> results = new ArrayList<>();
+    String query = """
+        SELECT r.*
+        FROM "User_Team" ut
+        INNER JOIN "Team" t ON t.id = ut.teamid
+        INNER JOIN "Goal" g ON g.teamid = t.id
+        INNER JOIN "Result" r ON r.goalid = g.id
+        WHERE ut.userid = ?
+        """;
+
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+          Result result = new Result();
+          result.setId(rs.getInt("id"));
+          result.setTitle(rs.getString("title"));
+          result.setCreatedAt(rs.getTimestamp("createdAt"));
+          result.setEndsAt(rs.getTimestamp("endsAt"));
+          result.setNote(rs.getString("note"));
+          result.setTag(rs.getString("tag"));
+          result.setGoalId(rs.getInt("goalId"));
+
+          results.add(result);
+        }
+      }
+      return results;
+    }
+  }
+
 }

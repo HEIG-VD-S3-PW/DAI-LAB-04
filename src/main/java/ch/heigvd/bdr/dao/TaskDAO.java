@@ -218,4 +218,39 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  public List<Task> getTasksByUserID(int userId) throws ClassNotFoundException, SQLException, IOException {
+    List<Task> tasks = new ArrayList<>();
+    String query = """
+        SELECT t.*
+        FROM "User_Team" ut
+        INNER JOIN "Team" tm ON tm.id = ut.teamid
+        INNER JOIN "Goal" g ON g.teamid = tm.id
+        INNER JOIN "Result" r ON r.goalid = g.id
+        INNER JOIN "Task" t ON t.resultid = r.id
+        WHERE ut.userid = ?
+        """;
+
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+          Task task = new Task();
+          task.setId(rs.getInt("id"));
+          task.setTitle(rs.getString("title"));
+          task.setStartsAt(rs.getTimestamp("startsAt"));
+          task.setDone(rs.getBoolean("done"));
+          task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
+          task.setDeadline(TaskDeadline.valueOf(rs.getString("deadline")));
+          task.setNote(rs.getString("note"));
+          task.setTag(rs.getString("tag"));
+          task.setResultId(rs.getInt("resultId"));
+          tasks.add(task);
+        }
+      }
+      return tasks;
+    }
+  }
+
 }

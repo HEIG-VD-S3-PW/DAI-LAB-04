@@ -2,11 +2,13 @@ package ch.heigvd.bdr.controllers;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 import ch.heigvd.bdr.dao.TaskDAO;
+import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.Task;
+import ch.heigvd.bdr.models.Team;
+import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
@@ -17,19 +19,36 @@ import io.javalin.openapi.OpenApiResponse;
 
 public class TaskController implements ResourceControllerInterface {
   private final TaskDAO taskDAO = new TaskDAO();
+  private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", responses = {
+  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", headers = {
+      @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+  }, responses = {
       @OpenApiResponse(status = "200", description = "List of tasks", content = @OpenApiContent(from = Task.class)),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    ctx.json(taskDAO.findAll());
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    if (userId == 0) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
+    User user = userDAO.findById(userId);
+    if (user == null) {
+      ctx.status(404).json(Map.of("message", "User not found"));
+      return;
+    }
+
+    List<Task> tasks = taskDAO.getTasksByUserID(user.getId());
+    ctx.json(tasks);
+
   }
 
   @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
-          @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class)),
-          @OpenApiResponse(status = "500", description = "Internal Server Error")
+      @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class)),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
@@ -37,7 +56,7 @@ public class TaskController implements ResourceControllerInterface {
       Task task = ctx.bodyAsClass(Task.class);
       ctx.status(201).json(taskDAO.create(task));
     } catch (Exception e) {
-      ctx.status(400).json("Error creating task: " + e.getMessage());
+      ctx.status(400).json(Map.of("message", "Invalid request data."));
     }
   }
 
@@ -53,7 +72,7 @@ public class TaskController implements ResourceControllerInterface {
     if (task != null) {
       ctx.json(task);
     } else {
-      ctx.status(404).json("Task not found");
+      ctx.status(404).json(Map.of("message", "Task not found"));
     }
   }
 
@@ -72,7 +91,7 @@ public class TaskController implements ResourceControllerInterface {
     if (updatedTask != null) {
       ctx.json(updatedTask);
     } else {
-      ctx.status(404).json("Task not found");
+      ctx.status(404).json(Map.of("message", "Task not found"));
     }
   }
 
@@ -87,7 +106,7 @@ public class TaskController implements ResourceControllerInterface {
     if (taskDAO.delete(id)) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Task not found");
+      ctx.status(404).json(Map.of("message", "Task not found"));
     }
   }
 
@@ -100,7 +119,7 @@ public class TaskController implements ResourceControllerInterface {
     int id = Integer.parseInt(ctx.pathParam("id"));
     Task task = taskDAO.findById(id);
     if (task == null) {
-      ctx.status(404).json("Task not found");
+      ctx.status(404).json(Map.of("message", "Task not found"));
       return;
     }
 
@@ -122,7 +141,7 @@ public class TaskController implements ResourceControllerInterface {
     HashMap<String, Object> requestBody = ctx.bodyAsClass(HashMap.class);
 
     if (!requestBody.containsKey("subtaskId")) {
-      ctx.status(400).json("Subtask ID is required.");
+      ctx.status(400).json(Map.of("message", "Invalid request data."));
       return;
     }
 
@@ -132,14 +151,14 @@ public class TaskController implements ResourceControllerInterface {
     // Find the parent task by ID
     Task task = taskDAO.findById(taskId);
     if (task == null) {
-      ctx.status(404).json("Parent task not found.");
+      ctx.status(404).json(Map.of("message", "Parent task not found."));
       return;
     }
 
     // Find the subtask by ID
     Task subtask = taskDAO.findById(subtaskId);
     if (subtask == null) {
-      ctx.status(404).json("Subtask not found.");
+      ctx.status(404).json(Map.of("message", "Subtask not found."));
       return;
     }
 
@@ -147,9 +166,9 @@ public class TaskController implements ResourceControllerInterface {
     // flag
     boolean relationshipAdded = taskDAO.addSubtaskRelationship(task, subtask, required);
     if (relationshipAdded) {
-      ctx.status(200).json("Subtask relationship added successfully.");
+      ctx.status(200).json(Map.of("message", "Subtask relationship added successfully."));
     } else {
-      ctx.status(500).json("Failed to add subtask relationship.");
+      ctx.status(500).json(Map.of("message", "Internal server error."));
     }
   }
 
@@ -171,19 +190,19 @@ public class TaskController implements ResourceControllerInterface {
     if (r.containsKey("required")) {
       required = r.get("required");
     } else {
-      ctx.status(400).json("Invalid JSON format.");
+      ctx.status(400).json(Map.of("message", "Invalid JSON format"));
       return;
     }
 
     Task task = taskDAO.findById(taskId);
     if (task == null) {
-      ctx.status(404).json("Parent task not found.");
+      ctx.status(404).json(Map.of("message", "Parent task not found."));
       return;
     }
 
     Task subtask = taskDAO.findById(subtaskId);
     if (subtask == null) {
-      ctx.status(404).json("Subtask not found.");
+      ctx.status(404).json(Map.of("message", "Subtask not found."));
       return;
     }
 
@@ -191,7 +210,7 @@ public class TaskController implements ResourceControllerInterface {
     if (updated) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Subtask relationship not found.");
+      ctx.status(404).json(Map.of("message", "Subtask relationship not found."));
     }
   }
 
@@ -209,13 +228,13 @@ public class TaskController implements ResourceControllerInterface {
 
     Task task = taskDAO.findById(taskId);
     if (task == null) {
-      ctx.status(404).json("Parent task not found.");
+      ctx.status(404).json(Map.of("message", "Parent task not found."));
       return;
     }
 
     Task subtask = taskDAO.findById(subtaskId);
     if (subtask == null) {
-      ctx.status(404).json("Subtask not found.");
+      ctx.status(404).json(Map.of("message", "Subtask not found."));
       return;
     }
 
@@ -223,7 +242,7 @@ public class TaskController implements ResourceControllerInterface {
     if (deleted) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Subtask relationship not found.");
+      ctx.status(404).json(Map.of("message", "Subtask relationship not found."));
     }
   }
 

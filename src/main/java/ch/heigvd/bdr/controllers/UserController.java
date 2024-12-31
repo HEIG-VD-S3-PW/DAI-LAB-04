@@ -1,16 +1,18 @@
 package ch.heigvd.bdr.controllers;
 
-import io.javalin.http.Context;
-import ch.heigvd.bdr.dao.UserDAO;
-import ch.heigvd.bdr.models.Goal;
-import ch.heigvd.bdr.models.Team;
-import ch.heigvd.bdr.models.User;
-import io.javalin.openapi.*;
-
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
+
+import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.models.User;
+import io.javalin.http.Context;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiRequestBody;
+import io.javalin.openapi.OpenApiResponse;
 
 public class UserController implements ResourceControllerInterface {
   private final UserDAO userDAO = new UserDAO();
@@ -83,35 +85,4 @@ public class UserController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/users/{id}/teams", methods = HttpMethod.GET, operationId = "getTeams", summary = "Get user teams", description = "Fetches all the teams an user belongs to", tags = "Users", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "User found", content = @OpenApiContent(from = Team.class)),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void teams(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int id = Integer.parseInt(ctx.pathParam("id"));
-    User user = userDAO.findById(id);
-    if (user == null) {
-      ctx.status(404).json("User not found");
-      return;
-    }
-
-    List<Team> teams = userDAO.getTeams(user.getId());
-    ctx.json(teams);
-  }
-
-  @OpenApi(path = "/users/{id}/goals", methods = HttpMethod.GET, operationId = "getGoals", summary = "Get user goals", description = "Fetches all the goals of an user", tags = "Users", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "User found", content = @OpenApiContent(from = Team.class)),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void goals(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int id = Integer.parseInt(ctx.pathParam("id"));
-    User user = userDAO.findById(id);
-    if (user == null) {
-      ctx.status(404).json("User not found");
-      return;
-    }
-
-    List<Goal> goals = userDAO.getGoals(user.getId());
-    ctx.json(goals);
-  }
 }

@@ -121,6 +121,37 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     }
   }
 
+  public List<Goal> getGoalsByUserID(int userId) throws ClassNotFoundException, SQLException, IOException {
+    List<Goal> goals = new ArrayList<>();
+    String query = """
+          SELECT g.*
+          FROM "User_Team" ut
+          INNER JOIN "Team" t ON t.id = ut.teamid
+          INNER JOIN "Goal" g ON g.teamid  = t.id
+          WHERE ut.userid = ?;
+        """;
+
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+          Goal goal = new Goal();
+          goal.setId(rs.getInt("id"));
+          goal.setName(rs.getString("name"));
+          goal.setDescription(rs.getString("description"));
+          goal.setTag(rs.getString("tag"));
+          goal.setNote(rs.getString("note"));
+          goal.setProjectId(rs.getInt("projectId"));
+          goal.setTeamId(rs.getInt("teamId"));
+          goals.add(goal);
+        }
+      }
+      return goals;
+    }
+  }
+
   // Relationship methods
   public List<Result> getGoalResults(int goalId) throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = new ArrayList<>();

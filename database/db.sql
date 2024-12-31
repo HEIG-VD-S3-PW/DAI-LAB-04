@@ -159,33 +159,46 @@ BEFORE INSERT ON "Task_Subtask"
 FOR EACH ROW
 EXECUTE FUNCTION check_task_subtask_relation();
 
--- check for dependencies when marking task as done
 CREATE OR REPLACE FUNCTION check_dependencies_on_task_done()
 RETURNS TRIGGER AS $$
 DECLARE
-    pending_required_dependencies BOOLEAN := FALSE;
+pending_required_dependencies BOOLEAN := FALSE;
 BEGIN
-    SELECT EXISTS(
-        SELECT 1 AS exist
-        FROM "Task_Subtask" ts
-		INNER JOIN "Task" st ON ts.subtaskId = st.id
-        WHERE ts.taskId = NEW.id 
-          AND ts.required IS TRUE 
-          AND st.done IS NOT TRUE
-    ) INTO pending_required_dependencies;
+    -- Vérifier si des dépendances requises ne sont pas terminées
+WITH RECURSIVE TaskDependencies AS (
+    -- Départ : dépendances directes de la tâche
+    SELECT ts.subtaskId
+    FROM "Task_Subtask" ts
+    WHERE ts.taskId = NEW.id AND ts.required IS TRUE
 
-    IF pending_required_dependencies THEN
-        RAISE EXCEPTION 'Cannot mark task as done: direct dependencies still not done.';
-    END IF;
+    UNION ALL
 
-    RETURN NEW;
+    -- Récursion : dépendances indirectes
+    SELECT ts.subtaskId
+    FROM "Task_Subtask" ts
+             INNER JOIN TaskDependencies td ON ts.taskId = td.subtaskId
+    WHERE ts.required IS TRUE
+)
+SELECT EXISTS(
+    SELECT 1
+    FROM TaskDependencies td
+             INNER JOIN "Task" t ON td.subtaskId = t.id
+    WHERE t.done IS NOT TRUE
+) INTO pending_required_dependencies;
+
+-- Si des dépendances ne sont pas terminées, lever une exception
+IF pending_required_dependencies THEN
+        RAISE EXCEPTION 'Cannot mark task as done: dependencies still not done.';
+END IF;
+
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER check_on_task_done
-BEFORE UPDATE ON "Task"
-FOR EACH ROW
-WHEN (OLD.done IS DISTINCT FROM NEW.done)
+    BEFORE UPDATE ON "Task"
+    FOR EACH ROW
+    WHEN (OLD.done IS DISTINCT FROM NEW.done)
 EXECUTE FUNCTION check_dependencies_on_task_done();
 
 CREATE TABLE "Task_CollaboratorNeed" (

@@ -1,5 +1,7 @@
 package ch.heigvd.bdr.controllers;
 
+import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.TeamDAO;
 import ch.heigvd.bdr.models.Team;
@@ -7,10 +9,14 @@ import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class TeamController implements ResourceControllerInterface {
   private final TeamDAO teamDAO = new TeamDAO();
+  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", responses = {
       @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team.class)),
@@ -43,7 +49,7 @@ public class TeamController implements ResourceControllerInterface {
     if (team != null) {
       ctx.json(team);
     } else {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
     }
   }
 
@@ -61,7 +67,7 @@ public class TeamController implements ResourceControllerInterface {
     if (updatedTeam != null) {
       ctx.json(updatedTeam);
     } else {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
     }
   }
 
@@ -76,7 +82,75 @@ public class TeamController implements ResourceControllerInterface {
     if (teamDAO.delete(id)) {
       ctx.status(204);
     } else {
-      ctx.status(404).json("Team not found");
+      ctx.status(404).json(Map.of("message", "Team not found"));
     }
+  }
+
+  @OpenApi(path = "/teams/{id}/join", methods = HttpMethod.POST, operationId = "joinTeam", summary = "Join a team", description = "Allows a user to join a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), headers = {
+      @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+  }, responses = {
+      @OpenApiResponse(status = "200", description = "User joined the team successfully"),
+      @OpenApiResponse(status = "400", description = "User is already a member of the team"),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+
+    int teamId = Integer.parseInt(ctx.pathParam("id"));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+
+    // Vérifier si l'utilisateur est déjà membre de l'équipe
+    if (userDAO.belongsToTeam(userId, teamId)) {
+      ctx.status(400).json(Map.of("message", "User is already a member of the team"));
+      return;
+    }
+
+    // Ajouter l'utilisateur à l'équipe
+    // UserTeam userTeam = new UserTeam(userId, teamId);
+    // userTeamDAO.create(userTeam);
+    userDAO.joinTeam(userId, teamId);
+
+    ctx.status(200).json(Map.of("message", "User joined the team successfully"));
+  }
+
+  @OpenApi(path = "/teams/{id}/leave", methods = HttpMethod.POST, operationId = "leaveTeam", summary = "Leave a team", description = "Allows a user to leave a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+      @OpenApiResponse(status = "200", description = "User left the team successfully"),
+      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  public void leave(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int teamId = Integer.parseInt(ctx.pathParam("id"));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+
+    // Vérifier si l'utilisateur est membre de l'équipe
+    if (!userDAO.belongsToTeam(userId, teamId)) {
+      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
+      return;
+    }
+
+    // Retirer l'utilisateur de l'équipe
+    userDAO.leaveTeam(userId, teamId);
+
+    ctx.status(200).json(Map.of("message", "User left the team successfully"));
+  }
+
+  @OpenApi(path = "/teams/{id}/users", methods = HttpMethod.GET, operationId = "getTeamMembers", summary = "Get users of a team", description = "Returns a list of users belonging to the specified team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+      @OpenApiResponse(status = "200", description = "List of users in the team", content = @OpenApiContent(from = User.class)),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  public void getTeamMembers(Context ctx) throws Exception {
+    int teamId = Integer.parseInt(ctx.pathParam("id"));
+
+    // Vérifier si l'équipe existe
+    Team team = teamDAO.findById(teamId);
+    if (team == null) {
+      ctx.status(404).json(Map.of("message", "Team not found"));
+      return;
+    }
+    // Récupérer les utilisateurs de l'équipe
+    List<User> users = teamDAO.getMembers(teamId);
+    ctx.json(users);
   }
 }
