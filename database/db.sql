@@ -254,3 +254,31 @@ CREATE TRIGGER check_task_dates_trigger
 BEFORE INSERT OR UPDATE ON "Task"
 FOR EACH ROW
 EXECUTE FUNCTION check_task_dates();
+
+-- check when deleting a task if it is the requiredTask of another one that isn't done yet
+
+CREATE OR REPLACE FUNCTION check_task_deletion()
+RETURNS TRIGGER AS $$
+DECLARE
+    dependent_task_ids TEXT; -- Variable to store all dependent task IDs as a comma-separated string
+BEGIN
+    -- Check for all tasks requiring the current task (OLD.id) that are not done
+    SELECT STRING_AGG(id::TEXT, ', ')
+    INTO dependent_task_ids
+    FROM "Task"
+    WHERE requiredTaskId = OLD.id AND done = FALSE;
+
+    IF dependent_task_ids IS NOT NULL THEN
+        RAISE EXCEPTION 'Task cannot be deleted, still required by the following tasks: %.', dependent_task_ids;
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE OR REPLACE TRIGGER taskDeletion 
+BEFORE DELETE ON Task 
+FOR EACH ROW 
+EXECUTE FUNCTION check_task_deletion();
