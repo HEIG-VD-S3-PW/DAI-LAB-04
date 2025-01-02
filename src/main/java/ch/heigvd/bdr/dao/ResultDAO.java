@@ -91,17 +91,18 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
 
   @Override
   public Result update(Result result) throws ClassNotFoundException, SQLException, IOException {
-    String query = "UPDATE \"Result\" SET endsAt = ?, note = ?, tag = ?, goalId = ? " +
+    String query = "UPDATE \"Result\" SET title = ?, endsAt = ?, note = ?, tag = ?, goalId = ? " +
         "WHERE id = ?";
 
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-      pstmt.setTimestamp(1, result.getEndsAt());
-      pstmt.setString(2, result.getNote());
-      pstmt.setString(3, result.getTag());
-      pstmt.setInt(4, result.getGoalId());
-      pstmt.setInt(5, result.getId());
+        pstmt.setString(1, result.getTitle());
+      pstmt.setTimestamp(2, result.getEndsAt());
+      pstmt.setString(3, result.getNote());
+      pstmt.setString(4, result.getTag());
+      pstmt.setInt(5, result.getGoalId());
+      pstmt.setInt(6, result.getId());
 
       pstmt.executeUpdate();
       return result;
