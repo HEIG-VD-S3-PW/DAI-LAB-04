@@ -153,4 +153,51 @@ public class TeamController implements ResourceControllerInterface {
     List<User> users = teamDAO.getMembers(teamId);
     ctx.json(users);
   }
+
+  @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.POST, operationId = "becomeManager", summary = "Become manager", description = "Let a member become manager", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+          @OpenApiResponse(status = "200", description = "User left the team successfully"),
+          @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+          @OpenApiResponse(status = "404", description = "Team not found"),
+          @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  public void becomeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int teamId = Integer.parseInt(ctx.pathParam("id"));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+
+    if (!userDAO.belongsToTeam(userId, teamId)) {
+      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
+      return;
+    }
+
+    teamDAO.addManager(userId, teamId);
+
+    ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
+  }
+
+
+  @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.DELETE, operationId = "removeManager", summary = "Remove manager", description = "Let a manager become a member", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+          @OpenApiResponse(status = "200", description = "User left the team successfully"),
+          @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+          @OpenApiResponse(status = "404", description = "Team not found"),
+          @OpenApiResponse(status = "500", description = "Internal Server Error")
+  })
+  public void removeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int teamId = Integer.parseInt(ctx.pathParam("id"));
+    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+
+    User user = new UserDAO().findById(userId);
+    if (user == null) {
+      ctx.status(404).json(Map.of("message", "User not found"));
+      return;
+    }
+
+    if (!userDAO.belongsToTeam(userId, teamId)) {
+      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
+      return;
+    }
+
+    teamDAO.removeManager(teamId);
+
+    ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
+  }
 }

@@ -129,7 +129,8 @@ public final class Main /*implements Handler*/ {
     app.post("/teams/{id}/join", teamController::join);
     app.post("/teams/{id}/leave", teamController::leave);
     app.get("/teams/{id}/users", teamController::getTeamMembers);
-
+    app.post("/teams/{id}/manager", teamController::becomeManager);
+    app.delete("/teams/{id}/manager", teamController::removeManager);
 
     ProjectController projectController = new ProjectController();
     app.get("/projects", projectController::all);
@@ -166,7 +167,5 @@ public final class Main /*implements Handler*/ {
     app.start("0.0.0.0", 7000);
   }
 
-  @Override
-  public void handle(@NotNull Context ctx) {
-  }
+
 }

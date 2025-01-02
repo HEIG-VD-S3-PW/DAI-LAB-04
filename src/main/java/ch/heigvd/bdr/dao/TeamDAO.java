@@ -12,13 +12,10 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
 
   @Override
   public Team create(Team team) throws ClassNotFoundException, SQLException, IOException {
-    //     String query = "INSERT INTO \"Team\" (name, managerId) VALUES (?, ?) RETURNING id";
-    // Temporary fix
     String query = "INSERT INTO \"Team\" (name) VALUES (?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
       pstmt.setString(1, team.getName());
-      // pstmt.setObject(2, team.getManagerId());
       pstmt.executeUpdate();
 
       try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -43,7 +40,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
           Team team = new Team();
           team.setId(rs.getInt("id"));
           team.setName(rs.getString("name"));
-          // team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
+            team.setManagerId(rs.getInt("managerId"));
           return team;
         }
       }
@@ -63,7 +60,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
         Team team = new Team();
         team.setId(rs.getInt("id"));
         team.setName(rs.getString("name"));
-        // team.setManagerId(rs.getObject("managerId") != null ? rs.getInt("managerId") : null);
+        team.setManagerId(rs.getInt("managerId"));
         teams.add(team);
       }
       return teams;
@@ -118,21 +115,7 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
-  public boolean addManager(User user, int teamId) throws ClassNotFoundException, SQLException, IOException {
-    String query = "UPDATE \"Team\" SET managerId = ? WHERE id = ?";
-    try (Connection conn = DatabaseUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, user.getId());
-      pstmt.setInt(2, teamId);
 
-      try (ResultSet rs = pstmt.executeQuery()) {
-        if (rs.next()) {
-          return true;
-        }
-      }
-      return false;
-    }
-  }
 
   public User getManager(int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM User u INNER JOIN Team t ON u.id = t.managerId WHERE t.id = ?";
@@ -155,20 +138,30 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+  public boolean addManager(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
+    String query = "UPDATE \"Team\" SET managerId = ? WHERE id = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, userId);
+      pstmt.setInt(2, teamId);
+
+      int rowsAffected = pstmt.executeUpdate();
+      return rowsAffected > 0;
+    }
+  }
+
+
   public boolean removeManager(int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Team\" SET managerId = NULL WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, teamId);
 
-      try (ResultSet rs = pstmt.executeQuery()) {
-        if (rs.next()) {
-          return true;
-        }
-      }
-      return false;
+      int rowsAffected = pstmt.executeUpdate();
+      return rowsAffected > 0;
     }
   }
+
 
     public List<User> getMembers(int id) throws Exception {
         List<User> members = new ArrayList<>();
