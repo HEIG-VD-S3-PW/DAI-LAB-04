@@ -168,8 +168,8 @@ public final class Main /*implements Handler*/ {
     app.post("/tasks/{id}/collaboratorNeeds", taskController::addCollaboratorNeeds);
     app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds);
     app.get("/tasks/{id}/collaboratorNeeds", taskController::getCollaboratorNeeds);
-    /*app.delete("/tasks/{id}/materialNeeds/{type}/{name}", taskController::deleteMaterialNeed);
-    app.delete("/tasks/{id}/collaboratorNeeds/{type}/{name}", taskController::deleteCollaboratorNeed);*/
+    app.delete("/tasks/{id}/materialNeeds/{type}", taskController::deleteMaterialNeed);
+    app.delete("/tasks/{id}/collaboratorNeeds/{type}", taskController::deleteCollaboratorNeed);
 
 
     app.start("0.0.0.0", 7000);
