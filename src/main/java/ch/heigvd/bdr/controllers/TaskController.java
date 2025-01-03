@@ -14,7 +14,6 @@ import io.javalin.openapi.OpenApiContent;
 import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
-import com.google.gson.reflect.TypeToken;
 
 public class TaskController implements ResourceControllerInterface {
   private final TaskDAO taskDAO = new TaskDAO();
