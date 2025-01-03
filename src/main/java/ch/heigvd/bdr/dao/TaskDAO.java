@@ -145,13 +145,13 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   }
 
   // Relationship methods
-  public List<TaskCollaboratorNeed> getTaskCollaboratorNeeds(int taskId)
+  public List<TaskCollaboratorNeed> getTaskCollaboratorNeeds(Task task)
       throws ClassNotFoundException, SQLException, IOException {
     List<TaskCollaboratorNeed> collaboratorNeeds = new ArrayList<>();
     String query = "SELECT * FROM \"Task_CollaboratorNeed\" WHERE taskId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, taskId);
+      pstmt.setInt(1, task.getId());
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {

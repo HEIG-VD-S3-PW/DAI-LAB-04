@@ -328,4 +328,30 @@ public class TaskController implements ResourceControllerInterface {
       ctx.status(404).json(Map.of("message", "Task not found"));
     }
   }
+
+  @OpenApi(path = "/tasks/{id}/collaboratorNeeds", methods = HttpMethod.POST, operationId = "getCollaboratorNeeds", summary = "Get the collaborator need of a task", description = "Get all the collaborator needs from a task given by its id", tags = "Tasks", pathParams = {
+          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+
+  }, responses = {
+          @OpenApiResponse(status = "200", description = "Collaborator need found successfully"),
+          @OpenApiResponse(status = "400", description = "Invalid request data"),
+          @OpenApiResponse(status = "404", description = "Task not found"),
+          @OpenApiResponse(status = "500", description = "Internal server error")
+  })
+  public void getCollaboratorNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int taskId = Integer.parseInt(ctx.pathParam("id"));
+
+    Task task = taskDAO.findById(taskId);
+    if (task == null) {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+      return;
+    }
+
+    List<TaskCollaboratorNeed> success = taskDAO.getTaskCollaboratorNeeds(task);
+    if (!success.isEmpty()) {
+      ctx.json(success);
+    } else {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+    }
+  }
 }
