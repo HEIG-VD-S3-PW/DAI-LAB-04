@@ -164,6 +164,14 @@ public final class Main /*implements Handler*/ {
     app.patch("/tasks/{id}/subtasks/{subtaskId}", taskController::updateSubtaskRequired);
     app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship);
 
+    app.post("/tasks/{id}/materialNeeds", taskController::addMaterialNeeds);
+    /*app.post("/tasks/{id}/humanNeeds", taskController::addHumanNeeds);
+    app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds);
+    app.get("/tasks/{id}/humanNeeds", taskController::getHumanNeeds);
+    app.delete("/tasks/{id}/materialNeeds/{type}/{name}", taskController::deleteMaterialNeed);
+    app.delete("/tasks/{id}/humanNeeds/{type}/{name}", taskController::deleteHumanNeed);*/
+
+
     app.start("0.0.0.0", 7000);
   }
 

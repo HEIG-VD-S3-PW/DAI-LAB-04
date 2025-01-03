@@ -6,9 +6,7 @@ import java.util.*;
 
 import ch.heigvd.bdr.dao.TaskDAO;
 import ch.heigvd.bdr.dao.UserDAO;
-import ch.heigvd.bdr.models.Task;
-import ch.heigvd.bdr.models.Team;
-import ch.heigvd.bdr.models.User;
+import ch.heigvd.bdr.models.*;
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
@@ -16,6 +14,7 @@ import io.javalin.openapi.OpenApiContent;
 import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
+import com.google.gson.reflect.TypeToken;
 
 public class TaskController implements ResourceControllerInterface {
   private final TaskDAO taskDAO = new TaskDAO();
@@ -243,6 +242,35 @@ public class TaskController implements ResourceControllerInterface {
       ctx.status(204);
     } else {
       ctx.status(404).json(Map.of("message", "Subtask relationship not found."));
+    }
+  }
+
+  @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.POST, operationId = "addMaterialNeeds", summary = "Add a material need to a task", description = "Add the material resources that a task need to be successfully completed", tags = "Tasks", pathParams = {
+          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+
+  }, responses = {
+          @OpenApiResponse(status = "200", description = "Material need added successfully"),
+          @OpenApiResponse(status = "400", description = "Invalid request data"),
+          @OpenApiResponse(status = "404", description = "Task not found"),
+          @OpenApiResponse(status = "500", description = "Internal server error")
+  })
+  public void addMaterialNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int taskId = Integer.parseInt(ctx.pathParam("id"));
+
+    Task task = taskDAO.findById(taskId);
+    if (task == null) {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+      return;
+    }
+
+    Material need = MaterialNeed.fromInt(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("type"))));
+    int qty = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("qty")));
+
+    boolean success = taskDAO.addMaterialNeed(task, need, qty);
+    if (success) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json(Map.of("message", "Task not found"));
     }
   }
 
