@@ -119,6 +119,21 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     if(qty < 0){
       return false;
     }
+    String query = "INSERT INTO \"Task_MaterialNeed\" (taskId, materialNeedType, quantity) VALUES  (?, ?, ?)";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setInt(2, need.getValue());
+      pstmt.setInt(3, qty);
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
+  public boolean addCollaboratorNeed(Task task, UserRole need, int qty)
+          throws ClassNotFoundException, SQLException, IOException{
+    if(qty < 0){
+      return false;
+    }
     String query = "INSERT INTO \"Task_CollaboratorNeed\" (taskId, collaboratorNeedType, quantity) VALUES  (?, ?, ?)";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {

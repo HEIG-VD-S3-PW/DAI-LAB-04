@@ -245,7 +245,7 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.POST, operationId = "addMaterialNeeds", summary = "Add a material need to a task", description = "Add the material resources that a task need to be successfully completed", tags = "Tasks", pathParams = {
+  @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.POST, operationId = "addMaterialNeeds", summary = "Add a material need to a task", description = "Add the material resources that a task needs to be successfully completed", tags = "Tasks", pathParams = {
           @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
@@ -267,6 +267,35 @@ public class TaskController implements ResourceControllerInterface {
     int qty = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("qty")));
 
     boolean success = taskDAO.addMaterialNeed(task, need, qty);
+    if (success) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+    }
+  }
+
+  @OpenApi(path = "/tasks/{id}/collaboratorNeeds", methods = HttpMethod.POST, operationId = "addCollaboratorNeeds", summary = "Add a collaborator need to a task", description = "Add the collaborator resources that a task needs to be successfully completed", tags = "Tasks", pathParams = {
+          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+
+  }, responses = {
+          @OpenApiResponse(status = "200", description = "Human need added successfully"),
+          @OpenApiResponse(status = "400", description = "Invalid request data"),
+          @OpenApiResponse(status = "404", description = "Task not found"),
+          @OpenApiResponse(status = "500", description = "Internal server error")
+  })
+  public void addCollaboratorNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int taskId = Integer.parseInt(ctx.pathParam("id"));
+
+    Task task = taskDAO.findById(taskId);
+    if (task == null) {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+      return;
+    }
+
+    UserRole need = CollaboratorNeed.fromInt(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("type"))));
+    int qty = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("qty")));
+
+    boolean success = taskDAO.addCollaboratorNeed(task, need, qty);
     if (success) {
       ctx.status(204);
     } else {

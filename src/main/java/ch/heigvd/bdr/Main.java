@@ -165,11 +165,11 @@ public final class Main /*implements Handler*/ {
     app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship);
 
     app.post("/tasks/{id}/materialNeeds", taskController::addMaterialNeeds);
-    /*app.post("/tasks/{id}/humanNeeds", taskController::addHumanNeeds);
-    app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds);
-    app.get("/tasks/{id}/humanNeeds", taskController::getHumanNeeds);
+    app.post("/tasks/{id}/collaboratorNeeds", taskController::addCollaboratorNeeds);
+    /*app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds);
+    app.get("/tasks/{id}/collaboratorNeeds", taskController::getCollaboratorNeeds);
     app.delete("/tasks/{id}/materialNeeds/{type}/{name}", taskController::deleteMaterialNeed);
-    app.delete("/tasks/{id}/humanNeeds/{type}/{name}", taskController::deleteHumanNeed);*/
+    app.delete("/tasks/{id}/collaboratorNeeds/{type}/{name}", taskController::deleteCollaboratorNeed);*/
 
 
     app.start("0.0.0.0", 7000);
