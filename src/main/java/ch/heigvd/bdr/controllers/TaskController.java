@@ -303,4 +303,29 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.POST, operationId = "getMaterialNeeds", summary = "Get the material need of a task", description = "Get all the material needs from a task given by its id", tags = "Tasks", pathParams = {
+          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+
+  }, responses = {
+          @OpenApiResponse(status = "200", description = "Material need found successfully"),
+          @OpenApiResponse(status = "400", description = "Invalid request data"),
+          @OpenApiResponse(status = "404", description = "Task not found"),
+          @OpenApiResponse(status = "500", description = "Internal server error")
+  })
+  public void getMaterialNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int taskId = Integer.parseInt(ctx.pathParam("id"));
+
+    Task task = taskDAO.findById(taskId);
+    if (task == null) {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+      return;
+    }
+
+    List<TaskMaterialNeed> success = taskDAO.getTaskMaterialNeeds(task);
+    if (!success.isEmpty()) {
+      ctx.json(success);
+    } else {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+    }
+  }
 }

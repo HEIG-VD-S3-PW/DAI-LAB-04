@@ -166,13 +166,13 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
-  public List<TaskMaterialNeed> getTaskMaterialNeeds(int taskId)
+  public List<TaskMaterialNeed> getTaskMaterialNeeds(Task task)
       throws ClassNotFoundException, SQLException, IOException {
     List<TaskMaterialNeed> materialNeeds = new ArrayList<>();
     String query = "SELECT * FROM \"Task_MaterialNeed\" WHERE taskId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, taskId);
+      pstmt.setInt(1, task.getId());
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
