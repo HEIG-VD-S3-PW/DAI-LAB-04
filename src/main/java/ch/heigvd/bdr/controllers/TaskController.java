@@ -255,19 +255,15 @@ public class TaskController implements ResourceControllerInterface {
   })
   public void addMaterialNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
-    System.out.println("HERE0");
 
     Task task = taskDAO.findById(taskId);
     if (task == null) {
       ctx.status(404).json(Map.of("message", "Task not found"));
       return;
     }
-    System.out.println("HERE1");
-
 
     MaterialNeed materialNeed = ctx.bodyAsClass(MaterialNeed.class);
     boolean success = taskDAO.addMaterialNeed(taskId, materialNeed);
-    System.out.println("HERE2");
 
     if (success) {
       ctx.status(204);
