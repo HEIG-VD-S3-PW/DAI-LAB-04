@@ -255,17 +255,20 @@ public class TaskController implements ResourceControllerInterface {
   })
   public void addMaterialNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
+    System.out.println("HERE0");
 
     Task task = taskDAO.findById(taskId);
     if (task == null) {
       ctx.status(404).json(Map.of("message", "Task not found"));
       return;
     }
+    System.out.println("HERE1");
 
-    Material need = MaterialNeed.fromInt(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("type"))));
-    int qty = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("qty")));
 
-    boolean success = taskDAO.addMaterialNeed(task, need, qty);
+    MaterialNeed materialNeed = ctx.bodyAsClass(MaterialNeed.class);
+    boolean success = taskDAO.addMaterialNeed(taskId, materialNeed);
+    System.out.println("HERE2");
+
     if (success) {
       ctx.status(204);
     } else {
@@ -285,16 +288,16 @@ public class TaskController implements ResourceControllerInterface {
   public void addCollaboratorNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
 
+
     Task task = taskDAO.findById(taskId);
     if (task == null) {
       ctx.status(404).json(Map.of("message", "Task not found"));
       return;
     }
 
-    UserRole need = CollaboratorNeed.fromInt(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("type"))));
-    int qty = Integer.parseInt(Objects.requireNonNull(ctx.queryParam("qty")));
+    CollaboratorNeed collaboratorNeed = ctx.bodyAsClass(CollaboratorNeed.class);
+    boolean success = taskDAO.addCollaboratorNeed(taskId, collaboratorNeed);
 
-    boolean success = taskDAO.addCollaboratorNeed(task, need, qty);
     if (success) {
       ctx.status(204);
     } else {

@@ -38,6 +38,19 @@ CREATE TABLE "CollaboratorNeed"(
 	CONSTRAINT PK_CollaboratorNeed PRIMARY KEY(type)
 );
 
+INSERT INTO "CollaboratorNeed" ("type") VALUES
+                                            ('ADMIN'),
+                                            ('MANAGER'),
+                                            ('CONTRIBUTOR'),
+                                            ('DEVELOPER'),
+                                            ('SCRUM_MASTER'),
+                                            ('DATA_SPECIALIST');
+
+INSERT INTO "MaterialNeed" ("type") VALUES
+                                            ('LICENSE'),
+                                            ('SERVER'),
+                                            ('DATABASE');
+
 CREATE TABLE "Project"(
 	id SERIAL,
 	name VARCHAR(100) NOT NULL,

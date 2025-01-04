@@ -114,32 +114,36 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
-  public boolean addMaterialNeed(Task task, Material need, int qty)
-          throws ClassNotFoundException, SQLException, IOException{
-    if(qty < 0){
+  public boolean addMaterialNeed(int taskId, MaterialNeed materialNeed) throws ClassNotFoundException, SQLException, IOException{
+    if(materialNeed.getQuantity() < 0) {
       return false;
     }
-    String query = "INSERT INTO \"Task_MaterialNeed\" (taskId, materialNeedType, quantity) VALUES  (?, ?, ?)";
+
+    String query = "INSERT INTO \"Task_MaterialNeed\" (taskId, materialNeedType, quantity) VALUES  (?, ?::\"Material\", ?)";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, task.getId());
-      pstmt.setString(2, need.name());
-      pstmt.setInt(3, qty);
+
+      pstmt.setInt(1, taskId);
+      pstmt.setString(2, materialNeed.getType().toString());
+      pstmt.setInt(3, materialNeed.getQuantity());
+
       return pstmt.executeUpdate() > 0;
     }
   }
 
-  public boolean addCollaboratorNeed(Task task, UserRole need, int qty)
+  public boolean addCollaboratorNeed(int taskId, CollaboratorNeed collaboratorNeed)
           throws ClassNotFoundException, SQLException, IOException{
-    if(qty < 0){
+
+    if(collaboratorNeed.getQuantity() < 0){
       return false;
     }
-    String query = "INSERT INTO \"Task_CollaboratorNeed\" (taskId, collaboratorNeedType, quantity) VALUES  (?, ?, ?)";
+
+    String query = "INSERT INTO \"Task_CollaboratorNeed\" (taskId, collaboratorNeedType, quantity) VALUES  (?, ?::\"UserRole\", ?)";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, task.getId());
-      pstmt.setString(2, need.name());
-      pstmt.setInt(3, qty);
+      pstmt.setInt(1, taskId);
+      pstmt.setString(2, collaboratorNeed.getType().toString());
+      pstmt.setInt(3, collaboratorNeed.getQuantity());
       return pstmt.executeUpdate() > 0;
     }
   }
@@ -147,14 +151,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
   public List<MaterialNeed> getTaskMaterialNeeds(Task task)
       throws ClassNotFoundException, SQLException, IOException {
     List<MaterialNeed> materialNeeds = new ArrayList<>();
-    String query = "SELECT materialNeedType FROM \"Task_MaterialNeed\" WHERE taskId = ?";
+    String query = "SELECT * FROM \"Task_MaterialNeed\" WHERE taskId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, task.getId());
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          MaterialNeed need = new MaterialNeed(Material.valueOf(rs.getString("materialNeedType")));
+          MaterialNeed need = new MaterialNeed(Material.valueOf(rs.getString("materialNeedType")), rs.getInt("quantity"));
           materialNeeds.add(need);
         }
       }
@@ -172,7 +176,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          CollaboratorNeed need = new CollaboratorNeed(UserRole.valueOf(rs.getString("collaboratorNeedType")));
+          CollaboratorNeed need = new CollaboratorNeed(UserRole.valueOf(rs.getString("collaboratorNeedType")), rs.getInt("quantity"));
           collaboratorNeeds.add(need);
         }
       }
@@ -182,7 +186,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
   public boolean deleteTaskMaterialNeeds(Task task, Material need)
           throws ClassNotFoundException, SQLException, IOException {
-    String query = "DELETE FROM \"Task_MaterialNeed\" WHERE taskId = ? AND materialNeedType = ?";
+    String query = "DELETE FROM \"Task_MaterialNeed\" WHERE taskId = ? AND materialNeedType = ?::\"Material\"";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, task.getId());
@@ -194,7 +198,7 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
 
   public boolean deleteTaskCollaboratorNeeds(Task task, UserRole need)
           throws ClassNotFoundException, SQLException, IOException {
-    String query = "DELETE FROM \"Task_CollaboratorNeed\" WHERE taskId = ? AND collaboratorNeedType = ?";
+    String query = "DELETE FROM \"Task_CollaboratorNeed\" WHERE taskId = ? AND collaboratorNeedType = ?::\"UserRole\"";
     try (Connection conn = DatabaseUtil.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setInt(1, task.getId());

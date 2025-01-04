@@ -2,9 +2,14 @@ package ch.heigvd.bdr.models;
 
 public class MaterialNeed {
   private Material type;
+  private int quantity;
 
-  public MaterialNeed(Material type) {
+  public MaterialNeed() {
+  }
+
+  public MaterialNeed(Material type, int quantity) {
     this.type = type;
+    this.quantity = quantity;
   }
 
   // Getters and setters
@@ -15,6 +20,14 @@ public class MaterialNeed {
   public void setType(Material type) {
     this.type = type;
   }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 
   public static Material fromInt(int i) {
     for (Material material : Material.values()) {
