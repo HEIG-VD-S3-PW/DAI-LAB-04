@@ -37,7 +37,7 @@ import io.javalin.security.RouteRole;
  */
 @SuppressWarnings({ "unused", "LombokGetterMayBeUsed", "LombokSetterMayBeUsed", "ProtectedMemberInFinalClass",
     "InnerClassMayBeStatic" })
-public final class Main /*implements Handler*/ {
+public final class Main /* implements Handler */ {
 
   enum Rules implements RouteRole {
     ANONYMOUS,
@@ -108,6 +108,20 @@ public final class Main /*implements Handler*/ {
       DatabaseExceptionHandler.handleGenericException(e, ctx);
     });
 
+    routes(app);
+
+    String portEnv = System.getenv("JAVALIN_PORT");
+    int port = 0;
+    if (portEnv == null) {
+      port = 7000;
+    } else {
+      port = Integer.valueOf(portEnv);
+    }
+
+    app.start("0.0.0.0", port);
+  }
+
+  private static void routes(Javalin app) {
     // routes
     app.get("/", ctx -> {
       ctx.result("hello");
@@ -173,7 +187,7 @@ public final class Main /*implements Handler*/ {
 
 
     app.start("0.0.0.0", 7000);
-  }
 
+  }
 
 }
