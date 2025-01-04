@@ -15,4 +15,13 @@ public class MaterialNeed {
   public void setType(Material type) {
     this.type = type;
   }
+
+  public static Material fromInt(int i) {
+    for (Material material : Material.values()) {
+      if (material.getValue() == i) {
+        return material;
+      }
+    }
+    throw new IllegalArgumentException("Unexpected value: " + i);
+  }
 }

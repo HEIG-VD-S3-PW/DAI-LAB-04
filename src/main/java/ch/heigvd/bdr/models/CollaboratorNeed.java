@@ -15,4 +15,13 @@ public class CollaboratorNeed {
   public void setType(UserRole type) {
     this.type = type;
   }
+
+  public static UserRole fromInt(int i) {
+    for (UserRole collaborator : UserRole.values()) {
+      if (collaborator.getValue() == i) {
+        return collaborator;
+      }
+    }
+    throw new IllegalArgumentException("Unexpected value: " + i);
+  }
 }

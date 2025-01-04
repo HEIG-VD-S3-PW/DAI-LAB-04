@@ -114,21 +114,65 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
-  // Relationship methods
-  public List<TaskCollaboratorNeed> getTaskCollaboratorNeeds(int taskId)
+  public boolean addMaterialNeed(Task task, Material need, int qty)
+          throws ClassNotFoundException, SQLException, IOException{
+    if(qty < 0){
+      return false;
+    }
+    String query = "INSERT INTO \"Task_MaterialNeed\" (taskId, materialNeedType, quantity) VALUES  (?, ?, ?)";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setString(2, need.name());
+      pstmt.setInt(3, qty);
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
+  public boolean addCollaboratorNeed(Task task, UserRole need, int qty)
+          throws ClassNotFoundException, SQLException, IOException{
+    if(qty < 0){
+      return false;
+    }
+    String query = "INSERT INTO \"Task_CollaboratorNeed\" (taskId, collaboratorNeedType, quantity) VALUES  (?, ?, ?)";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setString(2, need.name());
+      pstmt.setInt(3, qty);
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
+  public List<MaterialNeed> getTaskMaterialNeeds(Task task)
       throws ClassNotFoundException, SQLException, IOException {
-    List<TaskCollaboratorNeed> collaboratorNeeds = new ArrayList<>();
-    String query = "SELECT * FROM \"Task_CollaboratorNeed\" WHERE taskId = ?";
+    List<MaterialNeed> materialNeeds = new ArrayList<>();
+    String query = "SELECT materialNeedType FROM \"Task_MaterialNeed\" WHERE taskId = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, taskId);
+      pstmt.setInt(1, task.getId());
 
       try (ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
-          TaskCollaboratorNeed need = new TaskCollaboratorNeed();
-          need.setTaskId(rs.getInt("taskId"));
-          need.setCollaboratorNeedType(UserRole.valueOf(rs.getString("collaboratorNeedType")));
-          need.setQuantity(rs.getInt("quantity"));
+          MaterialNeed need = new MaterialNeed(Material.valueOf(rs.getString("materialNeedType")));
+          materialNeeds.add(need);
+        }
+      }
+      return materialNeeds;
+    }
+  }
+
+  public List<CollaboratorNeed> getTaskCollaboratorNeeds(Task task)
+          throws ClassNotFoundException, SQLException, IOException {
+    List<CollaboratorNeed> collaboratorNeeds = new ArrayList<>();
+    String query = "SELECT * FROM \"Task_CollaboratorNeed\" WHERE taskId = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+
+      try (ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+          CollaboratorNeed need = new CollaboratorNeed(UserRole.valueOf(rs.getString("collaboratorNeedType")));
           collaboratorNeeds.add(need);
         }
       }
@@ -136,24 +180,27 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
-  public List<TaskMaterialNeed> getTaskMaterialNeeds(int taskId)
-      throws ClassNotFoundException, SQLException, IOException {
-    List<TaskMaterialNeed> materialNeeds = new ArrayList<>();
-    String query = "SELECT * FROM \"Task_MaterialNeed\" WHERE taskId = ?";
+  public boolean deleteTaskMaterialNeeds(Task task, Material need)
+          throws ClassNotFoundException, SQLException, IOException {
+    String query = "DELETE FROM \"Task_MaterialNeed\" WHERE taskId = ? AND materialNeedType = ?";
     try (Connection conn = DatabaseUtil.getConnection();
-        PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, taskId);
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setString(2, need.name());
 
-      try (ResultSet rs = pstmt.executeQuery()) {
-        while (rs.next()) {
-          TaskMaterialNeed need = new TaskMaterialNeed();
-          need.setTaskId(rs.getInt("taskId"));
-          need.setMaterialNeedType(Material.valueOf(rs.getString("materialNeedType")));
-          need.setQuantity(rs.getInt("quantity"));
-          materialNeeds.add(need);
-        }
-      }
-      return materialNeeds;
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
+  public boolean deleteTaskCollaboratorNeeds(Task task, UserRole need)
+          throws ClassNotFoundException, SQLException, IOException {
+    String query = "DELETE FROM \"Task_CollaboratorNeed\" WHERE taskId = ? AND collaboratorNeedType = ?";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, task.getId());
+      pstmt.setString(2, need.name());
+
+      return pstmt.executeUpdate() > 0;
     }
   }
 
