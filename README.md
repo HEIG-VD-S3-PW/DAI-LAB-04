@@ -197,6 +197,8 @@ Where  `<TARGET>` is one of these values:
 
 The web application will listen by default on `0.0.0.0:7000`.
 
+You can change this value by setting the `JAVALIN_PORT` environment variable to whatever you want. For further information, take a look at the `compose.yml` file.
+
 #### Publishing the Docker image
 
 You can publish the image thanks to the following commands:
