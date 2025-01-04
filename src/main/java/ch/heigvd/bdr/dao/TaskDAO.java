@@ -148,6 +148,40 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  public boolean updateCollaboratorNeed(int taskId, CollaboratorNeed collaboratorNeed)
+          throws ClassNotFoundException, SQLException, IOException{
+
+    if(collaboratorNeed.getQuantity() < 0){
+      return false;
+    }
+
+    String query = "UPDATE \"Task_CollaboratorNeed\" SET quantity = ? WHERE taskId = ? AND collaboratorNeedType = ?::\"UserRole\"";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, collaboratorNeed.getQuantity());
+      pstmt.setInt(2, taskId);
+      pstmt.setString(3, collaboratorNeed.getType().toString());
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
+  public boolean updateMaterialNeed(int taskId, MaterialNeed materialNeed)
+          throws ClassNotFoundException, SQLException, IOException{
+
+    if(materialNeed.getQuantity() < 0){
+      return false;
+    }
+
+    String query = "UPDATE \"Task_MaterialNeed\" SET quantity = ? WHERE taskId = ? AND materialNeedType = ?::\"Material\"";
+    try (Connection conn = DatabaseUtil.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+      pstmt.setInt(1, materialNeed.getQuantity());
+      pstmt.setInt(2, taskId);
+      pstmt.setString(3, materialNeed.getType().toString());
+      return pstmt.executeUpdate() > 0;
+    }
+  }
+
   public List<MaterialNeed> getTaskMaterialNeeds(Task task)
       throws ClassNotFoundException, SQLException, IOException {
     List<MaterialNeed> materialNeeds = new ArrayList<>();
