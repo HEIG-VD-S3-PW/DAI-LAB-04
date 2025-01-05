@@ -69,12 +69,11 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
 
   @Override
   public Team update(Team team) throws ClassNotFoundException, SQLException, IOException {
-    String query = "UPDATE \"Team\" SET name = ?, managerId = ? WHERE id = ?";
+    String query = "UPDATE \"Team\" SET name = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setString(1, team.getName());
-      pstmt.setObject(2, team.getManagerId());
-      pstmt.setInt(3, team.getId());
+      pstmt.setInt(2, team.getId());
       pstmt.executeUpdate();
       return team;
     }

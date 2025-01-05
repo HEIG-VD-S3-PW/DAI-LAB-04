@@ -184,6 +184,8 @@ public final class Main /* implements Handler */ {
     app.get("/tasks/{id}/collaboratorNeeds", taskController::getCollaboratorNeeds);
     app.delete("/tasks/{id}/materialNeeds/{type}", taskController::deleteMaterialNeed);
     app.delete("/tasks/{id}/collaboratorNeeds/{type}", taskController::deleteCollaboratorNeed);
+    app.put("/tasks/{id}/materialNeeds/{type}", taskController::updateMaterialNeed);
+    app.put("/tasks/{id}/collaboratorNeeds/{type}", taskController::updateCollaboratorNeed);
 
 
     app.start("0.0.0.0", 7000);
