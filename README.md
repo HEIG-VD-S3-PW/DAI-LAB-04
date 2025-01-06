@@ -54,12 +54,11 @@
 
 ## Getting Started
 
-SimpFT is a simple file transfer application to upload and download files on a
-server.
+This program is a simple OKR manager. OKR is a goal-setting framework used by individuals, teams, and organizations to define measurable goals and track their outcomes.
 
-The client offers a `REPL` so you can type commands interactively. Options like the server address as well as the server port (on both server and client) can be specified.
+With this platform, you'll be able to create teams, manage its users, create projects, objectives, key results and tasks. You will also be able to set requirements for a task (human, material or even another task), its priority and define the timeframe in which the task must be done.
 
-You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ)
+Enjoy seamless collaboration with role-based access control for users.
 
 ### Get the source code
 
