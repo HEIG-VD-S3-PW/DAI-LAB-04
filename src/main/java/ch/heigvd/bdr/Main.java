@@ -187,6 +187,8 @@ public final class Main /* implements Handler */ {
     app.put("/tasks/{id}/materialNeeds/{type}", taskController::updateMaterialNeed);
     app.put("/tasks/{id}/collaboratorNeeds/{type}", taskController::updateCollaboratorNeed);
 
+    HealthController healthController = new HealthController();
+    app.get("/health", healthController::checkHealth);
 
     app.start("0.0.0.0", 7000);
 
