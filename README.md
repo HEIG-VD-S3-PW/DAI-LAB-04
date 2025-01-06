@@ -30,6 +30,7 @@
                 <li>
                   <a href="#running-the-image">Running the image</a>
                 </li>
+                <li><a href="#deployment">Deployment</a></li>
                 <li><a href="#demo">Demo</a></li>
           </ul>
         </li>
@@ -278,6 +279,26 @@ docker run -d \
 ```
 
 ##### Production
+
+Before launching the containers, make sure you create the following ```.env``` (at the project root) file required to setup *traefik*:
+
+```env
+# The image version to use for whoami
+WHOAMI_IMAGE_VERSION=latest
+# The email address for Let's Encrypt
+TRAEFIK_ACME_EMAIL=<YOUR_EMAIL>
+
+# The fully qualified domain name to access Traefik
+TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME=<YOUR_DOMAIN>
+
+# Enable the Traefik dashboard
+TRAEFIK_ENABLE_DASHBOARD=true
+
+# The image version to use for Traefik
+TRAEFIK_IMAGE_VERSION=latest
+```
+
+
 *backend*
 
 ```sh
@@ -328,6 +349,8 @@ docker compose --profile dev up
 ```sh
 docker compose --profile prod up
 ```
+
+##### Deployment
 
 ##### Demo
 

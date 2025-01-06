@@ -189,9 +189,6 @@ public final class Main /* implements Handler */ {
 
     HealthController healthController = new HealthController();
     app.get("/health", healthController::checkHealth);
-
-    app.start("0.0.0.0", 7000);
-
   }
 
 }

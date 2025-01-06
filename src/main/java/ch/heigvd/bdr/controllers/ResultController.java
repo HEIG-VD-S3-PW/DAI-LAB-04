@@ -26,11 +26,12 @@ public class ResultController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-    if (userId == 0) {
+    String header = ctx.header("X-User-ID");
+    if (header == null) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
       return;
     }
+    int userId = Integer.parseInt(header);
 
     User user = userDAO.findById(userId);
     if (user == null) {

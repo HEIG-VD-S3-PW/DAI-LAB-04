@@ -96,8 +96,13 @@ public class TeamController implements ResourceControllerInterface {
   })
   public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
 
+    String header = ctx.header("X-User-ID");
+    if (header == null) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+    int userId = Integer.parseInt(header);
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
 
     // Vérifier si l'utilisateur est déjà membre de l'équipe
     if (userDAO.belongsToTeam(userId, teamId)) {
@@ -155,10 +160,10 @@ public class TeamController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.POST, operationId = "becomeManager", summary = "Become manager", description = "Let a member become manager", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-          @OpenApiResponse(status = "200", description = "User left the team successfully"),
-          @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-          @OpenApiResponse(status = "404", description = "Team not found"),
-          @OpenApiResponse(status = "500", description = "Internal Server Error")
+      @OpenApiResponse(status = "200", description = "User left the team successfully"),
+      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   public void becomeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
@@ -174,12 +179,11 @@ public class TeamController implements ResourceControllerInterface {
     ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
   }
 
-
   @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.DELETE, operationId = "removeManager", summary = "Remove manager", description = "Let a manager become a member", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-          @OpenApiResponse(status = "200", description = "User left the team successfully"),
-          @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-          @OpenApiResponse(status = "404", description = "Team not found"),
-          @OpenApiResponse(status = "500", description = "Internal Server Error")
+      @OpenApiResponse(status = "200", description = "User left the team successfully"),
+      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   public void removeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));

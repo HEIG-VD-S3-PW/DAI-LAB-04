@@ -305,6 +305,6 @@ $$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE TRIGGER taskDeletion 
-BEFORE DELETE ON Task 
+BEFORE DELETE ON "Task"
 FOR EACH ROW 
 EXECUTE FUNCTION check_task_deletion();
