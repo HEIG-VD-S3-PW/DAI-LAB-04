@@ -164,6 +164,10 @@ services:
       - traefik.http.routers.traefik.rule=Host(`${TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME}`)
       # This is needed to access the Traefik dashboard
       - traefik.http.routers.traefik.service=api@internal
+      # Activate the cache and set the max TTl to 600 seconds
+      - traefik.http.middlewares.test-http-cache.plugin.httpCache.maxTtl=600
+      # Set a size limit of 3Gi to the overall cache of traefik
+      - traefik.http.middlewares.test-http-cache.plugin.httpCache.memory.limit=3Gi
   swagger-ui:
     profiles: [ prod, dev ]
     container_name: swagger-ui

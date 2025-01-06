@@ -314,6 +314,8 @@ docker run -d \
   --label traefik.http.routers.traefik.entrypoints=https \
   --label traefik.http.routers.traefik.rule=Host\(${TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME}\) \
   --label traefik.http.routers.traefik.service=api@internal \
+  --label traefik.http.middlewares.test-http-cache.plugin.httpCache.maxTtl=600
+  --label traefik.http.middlewares.test-http-cache.plugin.httpCache.memory.limit=3Gi
   traefik:${TRAEFIK_IMAGE_VERSION:-latest}
 ```
 
@@ -328,6 +330,13 @@ docker compose --profile dev up
 ```sh
 docker compose --profile prod up
 ```
+
+##### HTTP Caching
+Caching has been setup using the traefik middleware. The current configuration can be found in the compose.yml file under the  _traefik_ service.
+
+Currently, the maxTtl has been set to 600 seconds but be carefull, the time after which an HTTP response is no longer cached will be the lowest value between what is configured in maxTtl and the specified expiry time in the HTTP response headers.
+
+We also specified a memory.limit of 3Gi for the cache. Feel free to change the configuration according to your proxy's specified memory limit.
 
 ##### Demo
 
