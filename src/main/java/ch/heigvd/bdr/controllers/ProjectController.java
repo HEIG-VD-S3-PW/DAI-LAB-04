@@ -7,6 +7,7 @@ import io.javalin.openapi.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,7 +31,12 @@ public class ProjectController implements ResourceControllerInterface {
   // Retrieve all projects
   @Override
   public void all(Context ctx) throws SQLException, ClassNotFoundException, IOException {
+    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
+    if(lastKnownModification != null && !(lastKnownModification.isBefore(Collections.max(projectCache.values())))){
+      throw new NotModifiedResponse();
+    }
     List<Project> projects = projectDAO.findAll();
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.json(projects);
   }
 
