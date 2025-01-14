@@ -87,8 +87,8 @@ public class TeamController implements ResourceControllerInterface {
     Team team = ctx.bodyAsClass(Team.class);
     team.setId(id);
     Team updatedTeam = teamDAO.update(team);
-    teamCache.put(id, LocalDateTime.now());
     if (updatedTeam != null) {
+      teamCache.put(id, LocalDateTime.now());
       ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedTeam);
     } else {

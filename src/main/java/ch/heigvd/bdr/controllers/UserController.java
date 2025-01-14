@@ -2,11 +2,16 @@ package ch.heigvd.bdr.controllers;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
+import io.javalin.http.NotModifiedResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -15,6 +20,7 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class UserController implements ResourceControllerInterface {
+  private final ConcurrentHashMap<Integer, LocalDateTime> userCache = new ConcurrentHashMap<>();
   private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", responses = {
@@ -23,6 +29,11 @@ public class UserController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
+    if(lastKnownModification != null && !(lastKnownModification.isBefore(Collections.max(userCache.values())))){
+      throw new NotModifiedResponse();
+    }
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.json(userDAO.findAll());
   }
 
@@ -33,6 +44,8 @@ public class UserController implements ResourceControllerInterface {
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     User user = ctx.bodyAsClass(User.class);
+    userCache.put(user.getId(), LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(201).json(userDAO.create(user));
   }
 
@@ -44,11 +57,26 @@ public class UserController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
+    if(lastKnownModification != null && userCache.get(id).equals(lastKnownModification)) {
+      throw new NotModifiedResponse();
+    }
+
     User user = userDAO.findById(id);
+
     if (user != null) {
+      LocalDateTime now;
+      if(userCache.containsKey(id)) {
+        now = userCache.get(id);
+      }
+      else{
+        now = LocalDateTime.now();
+        userCache.put(id, now);
+      }
+      ctx.header("Last-Modified", now.toString());
       ctx.json(user);
     } else {
-      ctx.status(404).json("User not found");
+      ctx.status(404).json(Map.of("message", "User not found"));
     }
   }
 
@@ -64,6 +92,8 @@ public class UserController implements ResourceControllerInterface {
     user.setId(id);
     User updatedUser = userDAO.update(user);
     if (updatedUser != null) {
+      userCache.put(id, LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedUser);
     } else {
       ctx.status(404).json("User not found");
@@ -79,6 +109,7 @@ public class UserController implements ResourceControllerInterface {
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     if (userDAO.delete(id)) {
+      userCache.remove(id);
       ctx.status(204);
     } else {
       ctx.status(404).json("User not found");
