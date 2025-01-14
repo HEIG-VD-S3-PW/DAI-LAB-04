@@ -1,19 +1,22 @@
 package ch.heigvd.bdr.controllers;
 
 import io.javalin.http.Context;
+import io.javalin.http.NotModifiedResponse;
 import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.ProjectDAO;
 import ch.heigvd.bdr.models.Project;
 
 public class ProjectController implements ResourceControllerInterface {
-
+  private final ConcurrentHashMap<Integer, LocalDateTime> projectCache = new ConcurrentHashMap<>();
   private final ProjectDAO projectDAO;
 
   public ProjectController() {
@@ -41,6 +44,8 @@ public class ProjectController implements ResourceControllerInterface {
   public void create(Context ctx) throws ClassNotFoundException, IOException, SQLException {
     Project project = ctx.bodyAsClass(Project.class);
     Project createdProject = projectDAO.create(project);
+    projectCache.put(createdProject.getId(), LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(201).json(createdProject);
   }
 
@@ -53,9 +58,23 @@ public class ProjectController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
+    if(lastKnownModification != null && projectCache.get(id).equals(lastKnownModification)) {
+      throw new NotModifiedResponse();
+    }
+
     Project project = projectDAO.findById(id);
 
     if (project != null) {
+      LocalDateTime now;
+      if(projectCache.containsKey(id)) {
+        now = projectCache.get(id);
+      }
+      else{
+        now = LocalDateTime.now();
+        projectCache.put(id, now);
+      }
+      ctx.header("Last-Modified", now.toString());
       ctx.json(project);
     } else {
       ctx.status(404).json(Map.of("message", "Project not found"));
@@ -74,6 +93,9 @@ public class ProjectController implements ResourceControllerInterface {
     Project project = ctx.bodyAsClass(Project.class);
     project.setId(id);
     projectDAO.update(project);
+    // Update the cache
+    projectCache.put(id, LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(204);
   }
 
@@ -90,6 +112,7 @@ public class ProjectController implements ResourceControllerInterface {
     boolean deleted = projectDAO.delete(id);
 
     if (deleted) {
+      projectCache.remove(id);
       ctx.status(204);
     } else {
       ctx.status(404).json(Map.of("message", "Project not found"));
