@@ -2,6 +2,7 @@
 package ch.heigvd.bdr.controllers;
 
 import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.misc.StringHelper;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.ResultDAO;
 import ch.heigvd.bdr.models.*;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class ResultController implements ResourceControllerInterface {
@@ -26,13 +26,14 @@ public class ResultController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-    if (userId == 0) {
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
       return;
     }
 
-    User user = userDAO.findById(userId);
+    int id = Integer.parseInt(userId);
+    User user = userDAO.findById(id);
     if (user == null) {
       ctx.status(404).json(Map.of("message", "User not found"));
       return;

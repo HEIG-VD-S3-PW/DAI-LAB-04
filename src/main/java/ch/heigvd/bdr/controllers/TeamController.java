@@ -1,6 +1,7 @@
 package ch.heigvd.bdr.controllers;
 
 import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.misc.StringHelper;
 import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.TeamDAO;
@@ -97,10 +98,16 @@ public class TeamController implements ResourceControllerInterface {
   public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
 
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
+    int id = Integer.parseInt(userId);
 
     // Vérifier si l'utilisateur est déjà membre de l'équipe
-    if (userDAO.belongsToTeam(userId, teamId)) {
+    if (userDAO.belongsToTeam(id, teamId)) {
       ctx.status(400).json(Map.of("message", "User is already a member of the team"));
       return;
     }
@@ -108,7 +115,7 @@ public class TeamController implements ResourceControllerInterface {
     // Ajouter l'utilisateur à l'équipe
     // UserTeam userTeam = new UserTeam(userId, teamId);
     // userTeamDAO.create(userTeam);
-    userDAO.joinTeam(userId, teamId);
+    userDAO.joinTeam(id, teamId);
 
     ctx.status(200).json(Map.of("message", "User joined the team successfully"));
   }
@@ -121,16 +128,22 @@ public class TeamController implements ResourceControllerInterface {
   })
   public void leave(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
+
+    int id = Integer.parseInt(userId);
 
     // Vérifier si l'utilisateur est membre de l'équipe
-    if (!userDAO.belongsToTeam(userId, teamId)) {
+    if (!userDAO.belongsToTeam(id, teamId)) {
       ctx.status(400).json(Map.of("message", "User is not a member of the team"));
       return;
     }
 
     // Retirer l'utilisateur de l'équipe
-    userDAO.leaveTeam(userId, teamId);
+    userDAO.leaveTeam(id, teamId);
 
     ctx.status(200).json(Map.of("message", "User left the team successfully"));
   }
@@ -155,43 +168,54 @@ public class TeamController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.POST, operationId = "becomeManager", summary = "Become manager", description = "Let a member become manager", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-          @OpenApiResponse(status = "200", description = "User left the team successfully"),
-          @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-          @OpenApiResponse(status = "404", description = "Team not found"),
-          @OpenApiResponse(status = "500", description = "Internal Server Error")
+      @OpenApiResponse(status = "200", description = "User left the team successfully"),
+      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   public void becomeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
 
-    if (!userDAO.belongsToTeam(userId, teamId)) {
+    int id = Integer.parseInt(userId);
+
+    if (!userDAO.belongsToTeam(id, teamId)) {
       ctx.status(400).json(Map.of("message", "User is not a member of the team"));
       return;
     }
 
-    teamDAO.addManager(userId, teamId);
+    teamDAO.addManager(id, teamId);
 
     ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
   }
 
-
   @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.DELETE, operationId = "removeManager", summary = "Remove manager", description = "Let a manager become a member", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-          @OpenApiResponse(status = "200", description = "User left the team successfully"),
-          @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-          @OpenApiResponse(status = "404", description = "Team not found"),
-          @OpenApiResponse(status = "500", description = "Internal Server Error")
+      @OpenApiResponse(status = "200", description = "User left the team successfully"),
+      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+      @OpenApiResponse(status = "404", description = "Team not found"),
+      @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   public void removeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
+      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+      return;
+    }
 
-    User user = new UserDAO().findById(userId);
+    int id = Integer.parseInt(userId);
+
+    User user = new UserDAO().findById(id);
     if (user == null) {
       ctx.status(404).json(Map.of("message", "User not found"));
       return;
     }
 
-    if (!userDAO.belongsToTeam(userId, teamId)) {
+    if (!userDAO.belongsToTeam(id, teamId)) {
       ctx.status(400).json(Map.of("message", "User is not a member of the team"));
       return;
     }

@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import ch.heigvd.bdr.dao.GoalDAO;
 import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.misc.StringHelper;
 import ch.heigvd.bdr.models.Goal;
 import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
@@ -33,14 +34,14 @@ public class GoalController implements ResourceControllerInterface {
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
 
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-
-    if (userId == 0) {
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
       return;
     }
 
-    User user = userDAO.findById(userId);
+    int id = Integer.parseInt(userId);
+    User user = userDAO.findById(id);
     if (user == null) {
       ctx.status(404).json(Map.of("message", "User not found"));
       return;
