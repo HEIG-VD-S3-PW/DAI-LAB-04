@@ -13,27 +13,10 @@
       <ul>
         <li><a href="#get-the-source-code">Get the source code</a></li>
         <li><a href="#documentation">Documentation</a></li>
-        <li>
-          <a href="#prerequisites">Prerequisites</a>
-          <ul>
-            <li><a href="#java-21">Java 21</a></li>
-            <li><a href="#docker-setup">Docker setup</a></li>
-            <li><a href="#github-actions">GitHub actions</a></li>
-          </ul>
-        </li>
-            <li><a href="#development">Development</a></li>
-        <li>
-          <a href="#usage">Usage</a>
-          <ul>
-                <li><a href="#building-the-image">Building the image</a></li>
-                <li><a href="#publishing-the-docker-image">Publishing the Docker image</a></li>
-                <li>
-                  <a href="#running-the-image">Running the image</a>
-                </li>
-                <li><a href="#deployment">Deployment</a></li>
-                <li><a href="#demo">Demo</a></li>
-          </ul>
-        </li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#setup-web-infrastructure">Setup web infrastructure</a></li>
+        <li><a href="#development">Development<a></li>
+        <li><a href="#usage">Usage<a></li>
       </ul>
     </li>
     <li><a href="#contributing">Contributions</a></li>
@@ -75,10 +58,9 @@ cd DAI-LAB-04
 
 You will find all the information you need to use this application in this readme.
 
-
 The code documentation is written with standard `javadoc`.
 
-Also, the route's documentation (built with the [OpenAPI spec](https://swagger.io/specification/)) can be accessed throught the following url: http://localhost:8085. Then, you must specify the following url to fetch the **.json** file containing the documentation: http://localhost:7000/api/openapi.json
+Also, the route's documentation (built with the [OpenAPI spec](https://swagger.io/specification/)) can be accessed throught the following url: <http://localhost:8085>. Then, you must specify the following url to fetch the **.json** file containing the documentation: <http://localhost:7000/api/openapi.json>
 
 Notice, that these url's can only be accessed after launching the backend as the *SWAGGER-UI* client. Detailed instructions about how to do this can be found later in this document.
 
@@ -88,7 +70,7 @@ Here are some images of the **OpenAPI** documentation:
 ![OpenAPI documentation](./docs/img/open-api-2.png)
 ![OpenAPI documentation](./docs/img/open-api-3.png)
 
-### Prerequisites
+### Requirements
 
 #### Java 21
 
@@ -114,48 +96,153 @@ Here are some images of the **OpenAPI** documentation:
   winget install EclipseAdoptium.Temurin.21.JDK
   ```
 
-#### Docker setup
+#### Docker
 
-The application can be used with docker.
+The application can (and should) be used with docker.
 
 To install and use docker, follow the [official documentation](https://docs.docker.com/engine/install/)
 
-#### Github actions
+### Setup web infrastructure
 
-If you want to test the `Github actions` on your machine, you can use [act](https://github.com/nektos/act).
+First, create a virtual machine using your Azure account. To do so, select a virtual machine with the following characteristics from the creation menu:
 
-Before you launch any workflow, make sure you have created the following repository secrets:
+- **Project details**
+  - **Subscription**: Azure for Students
+  - **Resource group**: Create new with the name `<YOUR_VM_NAME>`
+- **Instance details**
+  - **Virtual machine name**: `<YOUR_VM_NAME>`
+  - **Region**: (Europe) West Europe
+  - **Availability options**: No infrastructure redundancy required
+  - **Security type**: Trusted launch virtual machines (the default)
+  - **Image**: Ubuntu Server 24.04 LTS - x64 Gen2 (the default)
+  - **VM architecture**: x64
+  - **Size**: `Standard_B1s` - you might need to click *"See all sizes"* to see this option
+- **Administrator account**
+  - **Authentication type**: SSH public key
+  - **Username**: `ubuntu`
+  - **SSH public key source**: Use existing public key
+  - **SSH public key**: Paste your public key here - see the note below for more information
+- **Inbound port rules**
+  - **Public inbound ports**: Allow selected ports
+  - **Select inbound ports**: HTTP (80), HTTPS (443), SSH (22)
+  
+The settings above will allow you to create a virtual machine whose open ports are: 80, 443 and 22. Also, SSH connections require key-based authentication.
 
-- `AUTH_TOKEN`
-- `DOCKER_USERNAME`
-- `DOCKER_PASSWORD`
+#### DNS
 
-Then, create a file named `.secrets` which should contain the following:
+Once the VM created, you can grab its IP address and create a DNS entry for that same IP.
+
+We used [duckdns.org](https://www.duckdns.org/) as our DNS service provider.
+
+All you need to do is to create an account and fill the simple form on the main page with your domain name (in our case it was: **api-heig-dai-pw04**). Then, update the DNS  entry with the IP address of your VM.
+
+##### Test the DNS resolution
+
+Test the DNS resolution of the DNS records you added from the virtual machine and from your local machine.
+
+```shell
+# Test the DNS resolution
+nslookup api-heig-dai-pw04.duckdns.org
+```
+
+```
+Server:         10.193.64.16
+Address:        10.193.64.16#53
+
+Non-authoritative answer:
+Name:   api-heig-dai-pw04.duckdns.org
+Address: 135.236.100.168
+```
+
+#### Deployment
+
+Even though the deployment instructions using docker can be found later in this document, all you need to do is:
+
+1. Clone or copy (using scp) the source code to the remote server
+2. Go to directory you have just created/copied and create a file named **.env** with the following content:
 
 ```env
-AUTH_TOKEN=<YOUR_AUTH_TOKEN>
-DOCKER_USERNAME=<USERNAME>
-DOCKER_PASSWORD=<GITHUB_APPLICATION_TOKEN>
+# The fully qualified domain name to access whoami (first instance)
+WHOAMI_1_FULLY_QUALIFIED_DOMAIN_NAME=api-heig-dai-pw04.duckdns.org
+
+# The fully qualified domain name to access whoami (second instance)
+#WHOAMI_2_FULLY_QUALIFIED_DOMAIN_NAME=heig-dai-pw04.duckdns.org
+
+# The image version to use for whoami
+WHOAMI_IMAGE_VERSION=latest
+# The email address for Let's Encrypt
+TRAEFIK_ACME_EMAIL=<YOUR_EMAIL>
+
+# The fully qualified domain name to access Traefik
+TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME=api-heig-dai-pw04.duckdns.org
+
+# Enable the Traefik dashboard
+TRAEFIK_ENABLE_DASHBOARD=true
+
+# The image version to use for Traefik
+TRAEFIK_IMAGE_VERSION=latest
 ```
 
-Finally, launch the publish workflow (which publishes the mvn package to Github registry) with the following command:
+Also, create a file named **credentials.txt** whose purpose is to store the database credentials.
+
+Then, simply run the command to launch our application as well as all its dependencies:
 
 ```sh
-act --secret-file .secrets
+sudo docker compose --profile prod up --build
 ```
 
-We have created two jobs: one that publishes this app to the `Github`'s `Maven` registry and the other builds and pushes the Docker image into `Github`'s container registry.
+##### Testing the web app
 
-You can launch them using the following commands:
+In order to prove that all services (http/s + ssh) are running, we can run the following command:
 
 ```sh
-# Publish Docker image to Github repository
-act --secret-file .secrets -j build-and-push-image
-# Publish .jar to Github repository
-act --secret-file .secrets -j publish
+ sudo nmap api-heig-dai-pw04.duckdns.org
 ```
 
-The workflows automatically publish this project to the GitHub's `mvn` and `Docker` registries.
+```
+Nmap scan report for api-heig-dai-pw04.duckdns.org (135.236.100.168)
+Host is up (0.020s latency).
+Not shown: 997 filtered tcp ports (no-response)
+PORT    STATE SERVICE
+22/tcp  open  ssh
+80/tcp  open  http
+443/tcp open  https
+
+Nmap done: 1 IP address (1 host up) scanned in 5.04 seconds
+```
+
+Then, we can use **CURL** to make some HTTP requests using both **HTTP** and **HTTPS**:
+
+**Testing HTTPS redirection**
+
+```sh
+curl -L --show-headers  http://api-heig-dai-pw04.duckdns.org/users
+
+HTTP/1.1 301 Moved Permanently
+Location: https://api-heig-dai-pw04.duckdns.org/users
+Date: Wed, 15 Jan 2025 08:23:10 GMT
+Content-Length: 17
+
+HTTP/2 200
+content-type: application/json
+date: Wed, 15 Jan 2025 08:23:10 GMT
+content-length: 2
+
+[]⏎ 
+```
+
+**Testing HTTPS**
+
+```sh
+curl --show-headers  https://api-heig-dai-pw04.duckdns.org/users
+curl --show-headers  https://api-heig-dai-pw04.duckdns.org/users
+HTTP/2 200
+content-type: application/json
+date: Wed, 15 Jan 2025 08:22:31 GMT
+content-length: 2
+
+[]⏎
+```
 
 ### Development
 
@@ -193,6 +280,7 @@ docker compose --profile <TARGET> build
 ```
 
 Where  `<TARGET>` is one of these values:
+
 - dev
 - prod
 
@@ -265,6 +353,7 @@ docker run -d \
 ##### Development
 
 *Backend*
+
 ```sh
 docker run -d \
   --name backend-dev \
@@ -298,7 +387,6 @@ TRAEFIK_ENABLE_DASHBOARD=true
 TRAEFIK_IMAGE_VERSION=latest
 ```
 
-
 *backend*
 
 ```sh
@@ -320,6 +408,7 @@ docker run -d \
 ```
 
 *reverse proxy*
+
 ```sh
 docker run -d \
   --name traefik \
@@ -348,76 +437,6 @@ docker compose --profile dev up
 
 ```sh
 docker compose --profile prod up
-```
-
-##### Deployment
-
-##### Demo
-
-The demo is done using the `compose.yml` file at the root of the repository and
-the content of `client-data` and `server-data`. You can use the `--build` flag
-if you want to build the image yourself otherwise the `compose.yml` is already
-setup to pull the latest version from the [GitHub Container Registry](https://github.com/Thynkon/dai-pw-02/pkgs/container/dai-pw-02)
-
-> [!NOTE]
-> To properly check if the file content you need to have another terminal open or
-> use a multiplexer such as [zellij](https://zellij.dev) or [tmux](https://github.com/tmux/tmux)
-
-```sh
-# Start the server
-docker compose up -d server
-
-# Display the server logs (on another terminal)
-docker compose logs -f server
-
-# Start the client interactively
-docker compose run --rm client
-
-# Now, both the client and server should show that the connection was established
-# and the client shows the '>' symbol to indicate that it is waiting for user input.
-# each line that starts with '>' here is a command that's sent through the client.
-
-# List the content of the current working directory on the remote
-> list .
-
-# Check that it corresponds to the content of server-data
-ls ./server-data
-
-# Upload a text file
-> put local_dir/hello_world.txt ./
-
-# Check that the file was uploaded correctly
-diff -s client-data/local_dir/hello_world.txt server-data/hello_world.txt
-
-# Upload a binary file
-> put thynkon.jpg ./image.jpg
-
-# Check that the file was uploaded correctly
-diff -s client-data/thynkon.jpg server-data/image.jpg
-
-# Download a text file from the server
-> get some_remote_file.txt remote.txt
-
-# Check that the file was downloaded correctly
-diff -s client-data/remote.txt server-data/some_remote_file.txt
-
-# Download a binary file from the server
-> get remote_dir/mon.png local_dir/image.png
-
-# Check that the file was downloaded correctly
-diff -s client-data/local_dir/image.png server-data/remote_dir/mon.png
-
-# Remove a file on the remote
-> delete image.jpg
-
-# Check that the file is actually removed
-ls server-data
-
-# Close the connection (You can also use Ctrl+d)
-> exit
-
-# Stop the server
-docker compose down server
 ```
 
 <!-- CONTRIBUTING -->
