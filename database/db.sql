@@ -1,22 +1,11 @@
-DROP TABLE IF EXISTS "User_Team";
-DROP TABLE IF EXISTS "Team";
-DROP TABLE IF EXISTS "User";
-
 DROP TABLE IF EXISTS "Task_CollaboratorNeed";
 DROP TABLE IF EXISTS "Task_MaterialNeed";
 DROP TABLE IF EXISTS "MaterialNeed";
 DROP TABLE IF EXISTS "CollaboratorNeed";
-
-DROP TYPE IF EXISTS "UserRole";
-DROP TYPE IF EXISTS "Material";
-
+DROP TABLE IF EXISTS "Task_Subtask";
 DROP TABLE IF EXISTS "Task";
 DROP TYPE IF EXISTS "TaskPriority";
 DROP TYPE IF EXISTS "TaskDeadline";
-
-DROP TABLE IF EXISTS "Result";
-DROP TABLE IF EXISTS "Goal";
-DROP TABLE IF EXISTS "Project";
 
 DROP TRIGGER IF EXISTS prevent_circular_dependencies ON "Task_Subtask";
 DROP FUNCTION IF EXISTS check_task_subtask_relation;
@@ -27,8 +16,18 @@ DROP FUNCTION IF EXISTS check_dependencies_on_task_done;
 DROP TRIGGER IF EXISTS taskDeletion ON "Task";
 DROP FUNCTION IF EXISTS check_task_deletion;
 
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
 
+DROP TABLE IF EXISTS "Result";
+DROP TABLE IF EXISTS "Goal";
+DROP TABLE IF EXISTS "Project";
+DROP TABLE IF EXISTS "User_Team";
+DROP TABLE IF EXISTS "Team";
+DROP TABLE IF EXISTS "User";
+
+DROP TYPE IF EXISTS "UserRole";
+DROP TYPE IF EXISTS "Material";
+
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
 CREATE Type "Material" AS ENUM('LICENSE', 'SERVER', 'DATABASE'); 
 
 CREATE TABLE "MaterialNeed"(
@@ -68,7 +67,8 @@ CREATE TABLE "User"(
 	email VARCHAR(255) NOT NULL,
 	role "UserRole" DEFAULT 'CONTRIBUTOR',
 	CONSTRAINT PK_User PRIMARY KEY(id),
-	CONSTRAINT UC_User_email UNIQUE(email)
+	CONSTRAINT UC_User_email UNIQUE(email),
+	CONSTRAINT CK_User_email CHECK (email ~* '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$')
 );
 
 CREATE TABLE "Team" (
@@ -131,6 +131,8 @@ CREATE TABLE "Task"(
 	CONSTRAINT PK_Task PRIMARY KEY(id),
 	CONSTRAINT UC_Task_starts_at UNIQUE(startsAt),
 	CONSTRAINT FK_Task_resultId FOREIGN KEY (resultId) REFERENCES "Result"(id) ON DELETE CASCADE ON UPDATE CASCADE
+	--,
+--	CONSTRAINT CK_Task_starts_at CHECK (startsAt > CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "Task_Subtask" (
@@ -321,17 +323,17 @@ FOR EACH ROW
 EXECUTE FUNCTION check_task_dates();
 
 -- check when deleting a task if it is the requiredTask of another one that isn't done yet
-
 CREATE OR REPLACE FUNCTION check_task_deletion()
 RETURNS TRIGGER AS $$
 DECLARE
-    dependent_task_ids TEXT; -- Variable to store all dependent task IDs as a comma-separated string
+    dependent_task_ids TEXT;
 BEGIN
-    -- Check for all tasks requiring the current task (OLD.id) that are not done
-    SELECT STRING_AGG(id::TEXT, ', ')
+    -- Check for any tasks requiring the current task as a subtask that are not done
+    SELECT STRING_AGG(t.id::TEXT, ', ')
     INTO dependent_task_ids
-    FROM "Task"
-    WHERE requiredTaskId = OLD.id AND done = FALSE;
+    FROM "Task_Subtask" ts
+    INNER JOIN "Task" t ON ts.taskId = t.id
+    WHERE ts.subtaskId = OLD.id AND t.done = FALSE;
 
     IF dependent_task_ids IS NOT NULL THEN
         RAISE EXCEPTION 'Task cannot be deleted, still required by the following tasks: %.', dependent_task_ids;
@@ -340,8 +342,6 @@ BEGIN
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
-
-
 
 CREATE OR REPLACE TRIGGER taskDeletion 
 BEFORE DELETE ON "Task" 
