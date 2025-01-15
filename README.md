@@ -153,6 +153,16 @@ Name:   api-heig-dai-pw04.duckdns.org
 Address: 135.236.100.168
 ```
 
+#### SSH connection
+
+In order to connect to the VM, simply type the following command:
+
+```sh
+ssh -i <PATH_TO_PRIVATE_KEY> ubuntu@api-heig-dai-pw04.duckdns.org
+```
+
+As key-based authentication was already setup, it wont ask you for a password.
+
 #### Deployment
 
 Even though the deployment instructions using docker can be found later in this document, all you need to do is:
