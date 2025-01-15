@@ -38,12 +38,11 @@
 
 ## Getting Started
 
-SimpFT is a simple file transfer application to upload and download files on a
-server.
+This program is a simple OKR manager. OKR is a goal-setting framework used by individuals, teams, and organizations to define measurable goals and track their outcomes.
 
-The client offers a `REPL` so you can type commands interactively. Options like the server address as well as the server port (on both server and client) can be specified.
+With this platform, you'll be able to create teams, manage its users, create projects, objectives, key results and tasks. You will also be able to set requirements for a task (human, material or even another task), its priority and define the timeframe in which the task must be done.
 
-You can also find the Protocol definition as a [pdf](./docs/proto.pdf) or [typst](./docs/proto.typ)
+Enjoy seamless collaboration with role-based access control for users.
 
 ### Get the source code
 
@@ -424,6 +423,8 @@ docker run -d \
   --label traefik.http.routers.traefik.entrypoints=https \
   --label traefik.http.routers.traefik.rule=Host\(${TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME}\) \
   --label traefik.http.routers.traefik.service=api@internal \
+  --label traefik.http.middlewares.test-http-cache.plugin.httpCache.maxTtl=600
+  --label traefik.http.middlewares.test-http-cache.plugin.httpCache.memory.limit=3Gi
   traefik:${TRAEFIK_IMAGE_VERSION:-latest}
 ```
 
@@ -438,6 +439,14 @@ docker compose --profile dev up
 ```sh
 docker compose --profile prod up
 ```
+
+##### HTTP Caching
+
+Caching has been setup using the traefik middleware. The current configuration can be found in the compose.yml file under the traefik service.
+
+Currently, the maxTtl has been set to 600 seconds but be carefull, the time after which an HTTP response is no longer cached will be the lowest value between what is configured in maxTtl and the specified expiry time in the HTTP response headers.
+
+We also specified a memory.limit of 3Gi for the cache. Feel free to change the configuration according to your proxy's specified memory limit.
 
 <!-- CONTRIBUTING -->
 
