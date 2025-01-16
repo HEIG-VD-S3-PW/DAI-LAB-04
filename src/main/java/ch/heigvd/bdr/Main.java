@@ -3,6 +3,7 @@ package ch.heigvd.bdr;
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -61,7 +62,7 @@ public final class Main /* implements Handler */ {
 
       config.registerPlugin(new OpenApiPlugin(openApiConfig -> openApiConfig
           .withDocumentationPath(deprecatedDocsPath)
-          .withRoles(Rules.ANONYMOUS)
+          .withRoles(AuthRole.ANY)
           .withDefinitionConfiguration((version, openApiDefinition) -> openApiDefinition
               .withInfo(openApiInfo -> openApiInfo
                   .description("An Objective-key-result app")
@@ -211,9 +212,5 @@ public final class Main /* implements Handler */ {
 
     HealthController healthController = new HealthController();
     app.get("/health", healthController::checkHealth);
-
-    app.start("0.0.0.0", 7000);
-
   }
-
 }
