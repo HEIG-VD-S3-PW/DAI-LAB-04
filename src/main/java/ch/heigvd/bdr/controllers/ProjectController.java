@@ -1,13 +1,12 @@
 package ch.heigvd.bdr.controllers;
 
 import io.javalin.http.Context;
-import io.javalin.http.NotModifiedResponse;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,12 +30,12 @@ public class ProjectController implements ResourceControllerInterface {
   // Retrieve all projects
   @Override
   public void all(Context ctx) throws SQLException, ClassNotFoundException, IOException {
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && !(lastKnownModification.isBefore(Collections.max(projectCache.values())))){
-      throw new NotModifiedResponse();
-    }
     List<Project> projects = projectDAO.findAll();
-    ctx.header("Last-Modified", LocalDateTime.now().toString());
+    for(Project p : projects) {
+      if(!projectCache.containsKey(p.getId())) {
+        projectCache.put(p.getId(), LocalDateTime.now());
+      }
+    }
     ctx.json(projects);
   }
 
@@ -64,26 +63,18 @@ public class ProjectController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && projectCache.get(id).equals(lastKnownModification)) {
-      throw new NotModifiedResponse();
+
+    if(UtilsController.checkModif(ctx, projectCache, id) == -1){
+      return;
     }
 
     Project project = projectDAO.findById(id);
 
     if (project != null) {
-      LocalDateTime now;
-      if(projectCache.containsKey(id)) {
-        now = projectCache.get(id);
-      }
-      else{
-        now = LocalDateTime.now();
-        projectCache.put(id, now);
-      }
-      ctx.header("Last-Modified", now.toString());
+      UtilsController.sendResponse(ctx, projectCache, project.getId());
       ctx.json(project);
     } else {
-      ctx.status(404).json(Map.of("message", "Project not found"));
+      throw new NotFoundResponse();
     }
   }
 

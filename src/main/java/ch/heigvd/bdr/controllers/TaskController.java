@@ -7,10 +7,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.TaskDAO;
-import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.*;
 import io.javalin.http.Context;
-import io.javalin.http.NotModifiedResponse;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -21,7 +20,6 @@ import io.javalin.openapi.OpenApiResponse;
 public class TaskController implements ResourceControllerInterface {
   private final ConcurrentHashMap<Integer, LocalDateTime> taskCache = new ConcurrentHashMap<>();
   private final TaskDAO taskDAO = new TaskDAO();
-  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
@@ -31,21 +29,13 @@ public class TaskController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-    if (userId == 0) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+    List<Task> tasks = taskDAO.findAll();
+    for(Task t : tasks) {
+      if(!taskCache.containsKey(t.getId())) {
+        taskCache.put(t.getId(), LocalDateTime.now());
+      }
     }
-
-    User user = userDAO.findById(userId);
-    if (user == null) {
-      ctx.status(404).json(Map.of("message", "User not found"));
-      return;
-    }
-
-    List<Task> tasks = taskDAO.getTasksByUserID(user.getId());
     ctx.json(tasks);
-
   }
 
   @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
@@ -72,26 +62,18 @@ public class TaskController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && taskCache.get(id).equals(lastKnownModification)) {
-      throw new NotModifiedResponse();
+
+    if(UtilsController.checkModif(ctx, taskCache, id) == -1){
+      return;
     }
 
     Task task = taskDAO.findById(id);
 
     if (task != null) {
-      LocalDateTime now;
-      if(taskCache.containsKey(id)) {
-        now = taskCache.get(id);
-      }
-      else{
-        now = LocalDateTime.now();
-        taskCache.put(id, now);
-      }
-      ctx.header("Last-Modified", now.toString());
+      UtilsController.sendResponse(ctx, taskCache, task.getId());
       ctx.json(task);
     } else {
-      ctx.status(404).json(Map.of("message", "Task not found"));
+      throw new NotFoundResponse();
     }
   }
 
@@ -207,7 +189,7 @@ public class TaskController implements ResourceControllerInterface {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
     int subtaskId = Integer.parseInt(ctx.pathParam("subtaskId"));
 
-    boolean required = false;
+    boolean required;
     HashMap<String, Boolean> r = ctx.bodyAsClass(HashMap.class);
     if (r.containsKey("required")) {
       required = r.get("required");

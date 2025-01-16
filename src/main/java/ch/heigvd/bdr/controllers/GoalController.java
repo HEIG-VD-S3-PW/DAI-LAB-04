@@ -3,16 +3,15 @@ package ch.heigvd.bdr.controllers;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.GoalDAO;
-import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.Goal;
-import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -21,8 +20,8 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class GoalController implements ResourceControllerInterface {
+  private final ConcurrentHashMap<Integer, LocalDateTime> goalCache = new ConcurrentHashMap<>();
   private final GoalDAO goalDAO = new GoalDAO();
-  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals", description = "Returns a list of all goals.", tags = "Goals", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
@@ -32,21 +31,12 @@ public class GoalController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-
-    if (userId == 0) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+    List<Goal> goals = goalDAO.findAll();
+    for(Goal g : goals) {
+      if(!goalCache.containsKey(g.getId())) {
+        goalCache.put(g.getId(), LocalDateTime.now());
+      }
     }
-
-    User user = userDAO.findById(userId);
-    if (user == null) {
-      ctx.status(404).json(Map.of("message", "User not found"));
-      return;
-    }
-
-    List<Goal> goals = goalDAO.getGoalsByUserID(user.getId());
     ctx.json(goals);
   }
 
@@ -57,6 +47,8 @@ public class GoalController implements ResourceControllerInterface {
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     Goal goal = ctx.bodyAsClass(Goal.class);
+    goalCache.put(goal.getId(), LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(201).json(goalDAO.create(goal));
   }
 
@@ -68,11 +60,18 @@ public class GoalController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+
+    if(UtilsController.checkModif(ctx, goalCache, id) == -1){
+      return;
+    }
+
     Goal goal = goalDAO.findById(id);
+
     if (goal != null) {
+      UtilsController.sendResponse(ctx, goalCache, goal.getId());
       ctx.json(goal);
     } else {
-      ctx.status(404).json(Map.of("message", "Goal not found"));
+      throw new NotFoundResponse();
     }
   }
 
@@ -85,13 +84,14 @@ public class GoalController implements ResourceControllerInterface {
   public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     Goal goal = ctx.bodyAsClass(Goal.class);
-
     goal.setId(id);
     Goal updatedGoal = goalDAO.update(goal);
     if (updatedGoal != null) {
+      goalCache.put(id, LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedGoal);
     } else {
-      ctx.status(404).json(Map.of("message", "Goal not found"));
+      throw new NotFoundResponse();
     }
   }
 
@@ -104,9 +104,10 @@ public class GoalController implements ResourceControllerInterface {
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     if (goalDAO.delete(id)) {
+      goalCache.remove(id);
       ctx.status(204);
     } else {
-      ctx.status(404).json(Map.of("message", "Goal not found"));
+      throw new NotFoundResponse();
     }
   }
 }

@@ -5,7 +5,7 @@ import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.TeamDAO;
 import ch.heigvd.bdr.models.Team;
-import io.javalin.http.NotModifiedResponse;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.*;
 
 import java.io.IOException;
@@ -25,12 +25,13 @@ public class TeamController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && !(lastKnownModification.isBefore(Collections.max(teamCache.values())))){
-      throw new NotModifiedResponse();
+    List<Team> teams = teamDAO.findAll();
+    for(Team t : teams) {
+      if(!teamCache.containsKey(t.getId())) {
+        teamCache.put(t.getId(), LocalDateTime.now());
+      }
     }
-    ctx.header("Last-Modified", LocalDateTime.now().toString());
-    ctx.json(teamDAO.findAll());
+    ctx.json(teams);
   }
 
   @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
@@ -53,26 +54,18 @@ public class TeamController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && teamCache.get(id).equals(lastKnownModification)) {
-      throw new NotModifiedResponse();
+
+    if(UtilsController.checkModif(ctx, teamCache, id) == -1){
+      return;
     }
 
     Team team = teamDAO.findById(id);
 
     if (team != null) {
-      LocalDateTime now;
-      if(teamCache.containsKey(id)) {
-        now = teamCache.get(id);
-      }
-      else{
-        now = LocalDateTime.now();
-        teamCache.put(id, now);
-      }
-      ctx.header("Last-Modified", now.toString());
+      UtilsController.sendResponse(ctx, teamCache, team.getId());
       ctx.json(team);
     } else {
-      ctx.status(404).json(Map.of("message", "Team not found"));
+      throw new NotFoundResponse();
     }
   }
 
