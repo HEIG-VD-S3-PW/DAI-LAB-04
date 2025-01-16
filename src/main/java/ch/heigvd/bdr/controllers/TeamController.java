@@ -27,8 +27,8 @@ public class TeamController implements ResourceControllerInterface {
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     List<Team> teams = teamDAO.findAll();
-    for(Team t : teams) {
-      if(!teamCache.containsKey(t.getId())) {
+    for (Team t : teams) {
+      if (!teamCache.containsKey(t.getId())) {
         teamCache.put(t.getId(), LocalDateTime.now());
       }
     }
@@ -56,7 +56,7 @@ public class TeamController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, teamCache, id) == -1){
+    if (UtilsController.checkModif(ctx, teamCache, id) == -1) {
       return;
     }
 
@@ -116,25 +116,21 @@ public class TeamController implements ResourceControllerInterface {
   })
   public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
 
+    String header = ctx.header("X-User-ID");
     int teamId = Integer.parseInt(ctx.pathParam("id"));
-    String userId = ctx.header("X-User-ID");
-    if (userId == null || !StringHelper.isInteger(userId)) {
+    int userId = Integer.parseInt(header);
+    if (header == null || !StringHelper.isInteger(header)) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
       return;
     }
 
-    int id = Integer.parseInt(userId);
-
     // Vérifier si l'utilisateur est déjà membre de l'équipe
-    if (userDAO.belongsToTeam(id, teamId)) {
+    if (userDAO.belongsToTeam(userId, teamId)) {
       ctx.status(400).json(Map.of("message", "User is already a member of the team"));
       return;
     }
 
-    // Ajouter l'utilisateur à l'équipe
-    // UserTeam userTeam = new UserTeam(userId, teamId);
-    // userTeamDAO.create(userTeam);
-    userDAO.joinTeam(id, teamId);
+    userDAO.joinTeam(userId, teamId);
 
     ctx.status(200).json(Map.of("message", "User joined the team successfully"));
   }

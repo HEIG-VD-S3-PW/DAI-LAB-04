@@ -35,7 +35,6 @@ public class GoalController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-
     String userId = ctx.header("X-User-ID");
     if (userId == null || !StringHelper.isInteger(userId)) {
       ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
