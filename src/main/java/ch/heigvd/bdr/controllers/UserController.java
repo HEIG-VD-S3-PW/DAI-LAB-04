@@ -2,11 +2,15 @@ package ch.heigvd.bdr.controllers;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.User;
 import io.javalin.http.Context;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -15,6 +19,7 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class UserController implements ResourceControllerInterface {
+  private final ConcurrentHashMap<Integer, LocalDateTime> userCache = new ConcurrentHashMap<>();
   private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", responses = {
@@ -23,7 +28,13 @@ public class UserController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    ctx.json(userDAO.findAll());
+    List<User> users = userDAO.findAll();
+    for(User u : users) {
+      if(!userCache.containsKey(u.getId())) {
+        userCache.put(u.getId(), LocalDateTime.now());
+      }
+    }
+    ctx.json(users);
   }
 
   @OpenApi(path = "/users", methods = HttpMethod.POST, operationId = "createUser", summary = "Create a new user", description = "Creates a new user in the system.", tags = "Users", requestBody = @OpenApiRequestBody(description = "User details", content = @OpenApiContent(from = User.class)), responses = {
@@ -33,6 +44,8 @@ public class UserController implements ResourceControllerInterface {
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     User user = ctx.bodyAsClass(User.class);
+    userCache.put(user.getId(), LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(201).json(userDAO.create(user));
   }
 
@@ -44,11 +57,18 @@ public class UserController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+
+    if(UtilsController.checkModif(ctx, userCache, id) == -1){
+      return;
+    }
+
     User user = userDAO.findById(id);
+
     if (user != null) {
+      UtilsController.sendResponse(ctx, userCache, user.getId());
       ctx.json(user);
     } else {
-      ctx.status(404).json("User not found");
+      throw new NotFoundResponse();
     }
   }
 
@@ -64,9 +84,11 @@ public class UserController implements ResourceControllerInterface {
     user.setId(id);
     User updatedUser = userDAO.update(user);
     if (updatedUser != null) {
+      userCache.put(id, LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedUser);
     } else {
-      ctx.status(404).json("User not found");
+      throw new NotFoundResponse();
     }
   }
 
@@ -79,9 +101,10 @@ public class UserController implements ResourceControllerInterface {
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     if (userDAO.delete(id)) {
+      userCache.remove(id);
       ctx.status(204);
     } else {
-      ctx.status(404).json("User not found");
+      throw new NotFoundResponse();
     }
   }
 
