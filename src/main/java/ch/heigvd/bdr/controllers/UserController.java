@@ -58,9 +58,7 @@ public class UserController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, userCache, id) == -1){
-      return;
-    }
+    UtilsController.checkModif(ctx, userCache, id);
 
     User user = userDAO.findById(id);
 

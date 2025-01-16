@@ -64,9 +64,7 @@ public class ProjectController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, projectCache, id) == -1){
-      return;
-    }
+    UtilsController.checkModif(ctx, projectCache, id);
 
     Project project = projectDAO.findById(id);
 

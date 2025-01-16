@@ -63,9 +63,7 @@ public class TaskController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if (UtilsController.checkModif(ctx, taskCache, id) == -1) {
-      return;
-    }
+    UtilsController.checkModif(ctx, taskCache, id);
 
     Task task = taskDAO.findById(id);
 

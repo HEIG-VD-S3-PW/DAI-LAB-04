@@ -61,9 +61,7 @@ public class GoalController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if (UtilsController.checkModif(ctx, goalCache, id) == -1) {
-      return;
-    }
+    UtilsController.checkModif(ctx, goalCache, id);
 
     Goal goal = goalDAO.findById(id);
 
