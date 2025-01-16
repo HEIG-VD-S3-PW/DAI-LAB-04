@@ -32,8 +32,8 @@ public class GoalController implements ResourceControllerInterface {
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     List<Goal> goals = goalDAO.findAll();
-    for(Goal g : goals) {
-      if(!goalCache.containsKey(g.getId())) {
+    for (Goal g : goals) {
+      if (!goalCache.containsKey(g.getId())) {
         goalCache.put(g.getId(), LocalDateTime.now());
       }
     }
@@ -61,7 +61,7 @@ public class GoalController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, goalCache, id) == -1){
+    if (UtilsController.checkModif(ctx, goalCache, id) == -1) {
       return;
     }
 

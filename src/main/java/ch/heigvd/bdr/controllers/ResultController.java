@@ -28,8 +28,8 @@ public class ResultController implements ResourceControllerInterface {
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = resultDAO.findAll();
-    for(Result r : results) {
-      if(!resultCache.containsKey(r.getId())) {
+    for (Result r : results) {
+      if (!resultCache.containsKey(r.getId())) {
         resultCache.put(r.getId(), LocalDateTime.now());
       }
     }
@@ -57,7 +57,7 @@ public class ResultController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, resultCache, id) == -1){
+    if (UtilsController.checkModif(ctx, resultCache, id) == -1) {
       return;
     }
 

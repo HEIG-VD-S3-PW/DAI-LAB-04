@@ -30,8 +30,8 @@ public class TaskController implements ResourceControllerInterface {
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     List<Task> tasks = taskDAO.findAll();
-    for(Task t : tasks) {
-      if(!taskCache.containsKey(t.getId())) {
+    for (Task t : tasks) {
+      if (!taskCache.containsKey(t.getId())) {
         taskCache.put(t.getId(), LocalDateTime.now());
       }
     }
@@ -63,7 +63,7 @@ public class TaskController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, taskCache, id) == -1){
+    if (UtilsController.checkModif(ctx, taskCache, id) == -1) {
       return;
     }
 
@@ -251,13 +251,13 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.POST, operationId = "addMaterialNeeds", summary = "Add a material need to a task", description = "Add the material resources that a task needs to be successfully completed", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "Material need added successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "Material need added successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
   public void addMaterialNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
@@ -279,17 +279,16 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds", methods = HttpMethod.POST, operationId = "addCollaboratorNeeds", summary = "Add a collaborator need to a task", description = "Add the collaborator resources that a task needs to be successfully completed", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "Human need added successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "Human need added successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
   public void addCollaboratorNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
-
 
     Task task = taskDAO.findById(taskId);
     if (task == null) {
@@ -308,72 +307,69 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks/{id}/materialNeeds/{type}", methods = HttpMethod.PATCH, operationId = "updateMaterialNeed", summary = "Update the quantity of a material need for a task", description = "Update the quantity of a material need for a task given by its id, only for the \"Material\" type", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "Material need updated successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "Material need updated successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
-    public void updateMaterialNeed(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-        int taskId = Integer.parseInt(ctx.pathParam("id"));
+  public void updateMaterialNeed(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int taskId = Integer.parseInt(ctx.pathParam("id"));
 
-        Task task = taskDAO.findById(taskId);
-        if (task == null) {
-        ctx.status(404).json(Map.of("message", "Task not found"));
-        return;
-        }
-
-        MaterialNeed materialNeed = ctx.bodyAsClass(MaterialNeed.class);
-
-        boolean success = taskDAO.updateMaterialNeed(taskId, materialNeed);
-        if (success) {
-        ctx.status(204);
-        } else {
-        ctx.status(404).json(Map.of("message", "Task not found"));
-        }
+    Task task = taskDAO.findById(taskId);
+    if (task == null) {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+      return;
     }
 
+    MaterialNeed materialNeed = ctx.bodyAsClass(MaterialNeed.class);
 
-    @OpenApi(path = "/tasks/{id}/collaboratorNeeds/{type}", methods = HttpMethod.PATCH, operationId = "updateCollaboratorNeed", summary = "Update the quantity of a collaborator need for a task", description = "Update the quantity of a collaborator need for a task given by its id, only for the \"UserRole\" type", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+    boolean success = taskDAO.updateMaterialNeed(taskId, materialNeed);
+    if (success) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+    }
+  }
 
-    }, responses = {
-          @OpenApiResponse(status = "204", description = "Collaborator need updated successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
-    })
-    public void updateCollaboratorNeed(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-        int taskId = Integer.parseInt(ctx.pathParam("id"));
+  @OpenApi(path = "/tasks/{id}/collaboratorNeeds/{type}", methods = HttpMethod.PATCH, operationId = "updateCollaboratorNeed", summary = "Update the quantity of a collaborator need for a task", description = "Update the quantity of a collaborator need for a task given by its id, only for the \"UserRole\" type", tags = "Tasks", pathParams = {
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
-        Task task = taskDAO.findById(taskId);
-        if (task == null) {
-        ctx.status(404).json(Map.of("message", "Task not found"));
-        return;
-        }
+  }, responses = {
+      @OpenApiResponse(status = "204", description = "Collaborator need updated successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
+  })
+  public void updateCollaboratorNeed(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    int taskId = Integer.parseInt(ctx.pathParam("id"));
 
-        CollaboratorNeed collaboratorNeed = ctx.bodyAsClass(CollaboratorNeed.class);
-
-        boolean success = taskDAO.updateCollaboratorNeed(taskId, collaboratorNeed);
-        if (success) {
-        ctx.status(204);
-        } else {
-        ctx.status(404).json(Map.of("message", "Task not found"));
-        }
+    Task task = taskDAO.findById(taskId);
+    if (task == null) {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+      return;
     }
 
+    CollaboratorNeed collaboratorNeed = ctx.bodyAsClass(CollaboratorNeed.class);
 
+    boolean success = taskDAO.updateCollaboratorNeed(taskId, collaboratorNeed);
+    if (success) {
+      ctx.status(204);
+    } else {
+      ctx.status(404).json(Map.of("message", "Task not found"));
+    }
+  }
 
   @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.GET, operationId = "getMaterialNeeds", summary = "Get the material need of a task", description = "Get all the material needs from a task given by its id", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "Material need found successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "Material need found successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
   public void getMaterialNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
@@ -393,13 +389,13 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds", methods = HttpMethod.GET, operationId = "getCollaboratorNeeds", summary = "Get the collaborator need of a task", description = "Get all the collaborator needs from a task given by its id", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "Collaborator need found successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "Collaborator need found successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
   public void getCollaboratorNeeds(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
@@ -419,13 +415,13 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks/{id}/materialNeeds/{type}/", methods = HttpMethod.DELETE, operationId = "deleteMaterialNeed", summary = "Delete a material need for a task", description = "Delete all the material needs from a task given by its id, only for the \"Material\" type", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "MaterialNeed deleted successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "MaterialNeed deleted successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
   public void deleteMaterialNeed(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
@@ -447,13 +443,13 @@ public class TaskController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds/{type}", methods = HttpMethod.DELETE, operationId = "deleteCollaboratorNeed", summary = "Delete a collaborator need for a task", description = "Delete all the collaborator needs from a task given by its id, only for the \"UserRole\" type", tags = "Tasks", pathParams = {
-          @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
+      @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
   }, responses = {
-          @OpenApiResponse(status = "204", description = "CollaboratorNeed deleted successfully"),
-          @OpenApiResponse(status = "400", description = "Invalid request data"),
-          @OpenApiResponse(status = "404", description = "Task not found"),
-          @OpenApiResponse(status = "500", description = "Internal server error")
+      @OpenApiResponse(status = "204", description = "CollaboratorNeed deleted successfully"),
+      @OpenApiResponse(status = "400", description = "Invalid request data"),
+      @OpenApiResponse(status = "404", description = "Task not found"),
+      @OpenApiResponse(status = "500", description = "Internal server error")
   })
   public void deleteCollaboratorNeed(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int taskId = Integer.parseInt(ctx.pathParam("id"));
