@@ -27,9 +27,6 @@ DROP FUNCTION IF EXISTS check_dependencies_on_task_done;
 DROP TRIGGER IF EXISTS taskDeletion ON "Task";
 DROP FUNCTION IF EXISTS check_task_deletion;
 
-DROP TRIGGER IF EXISTS teamDeletion ON "Team";
-DROP FUNCTION IF EXISTS check_team_deletion;
-
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'CONTRIBUTOR', 'DEVELOPER', 'SCRUM_MASTER', 'DATA_SPECIALIST');
 
 CREATE Type "Material" AS ENUM('LICENSE', 'SERVER', 'DATABASE'); 
