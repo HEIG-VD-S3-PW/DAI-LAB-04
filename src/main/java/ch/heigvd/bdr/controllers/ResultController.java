@@ -1,22 +1,23 @@
 
 package ch.heigvd.bdr.controllers;
 
-import ch.heigvd.bdr.dao.UserDAO;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.ResultDAO;
 import ch.heigvd.bdr.models.*;
+import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ResultController implements ResourceControllerInterface {
+  private final ConcurrentHashMap<Integer, LocalDateTime> resultCache = new ConcurrentHashMap<>();
   private final ResultDAO resultDAO = new ResultDAO();
-  private final UserDAO userDAO = new UserDAO();
 
   @OpenApi(path = "/results", methods = HttpMethod.GET, operationId = "getAllResults", summary = "Get all results", description = "Returns a list of all results.", tags = "Results", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
@@ -26,19 +27,12 @@ public class ResultController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int userId = Integer.parseInt(Objects.requireNonNull(ctx.header("X-User-ID")));
-    if (userId == 0) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+    List<Result> results = resultDAO.findAll();
+    for(Result r : results) {
+      if(!resultCache.containsKey(r.getId())) {
+        resultCache.put(r.getId(), LocalDateTime.now());
+      }
     }
-
-    User user = userDAO.findById(userId);
-    if (user == null) {
-      ctx.status(404).json(Map.of("message", "User not found"));
-      return;
-    }
-
-    List<Result> results = resultDAO.getResultsByUserID(user.getId());
     ctx.json(results);
   }
 
@@ -49,6 +43,8 @@ public class ResultController implements ResourceControllerInterface {
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     Result result = ctx.bodyAsClass(Result.class);
+    resultCache.put(result.getId(), LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(201).json(resultDAO.create(result));
   }
 
@@ -60,11 +56,18 @@ public class ResultController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+
+    if(UtilsController.checkModif(ctx, resultCache, id) == -1){
+      return;
+    }
+
     Result result = resultDAO.findById(id);
+
     if (result != null) {
+      UtilsController.sendResponse(ctx, resultCache, result.getId());
       ctx.json(result);
     } else {
-      ctx.status(404).json(Map.of("message", "Result not found"));
+      throw new NotFoundResponse();
     }
   }
 
@@ -80,6 +83,8 @@ public class ResultController implements ResourceControllerInterface {
     result.setId(id);
     Result updatedResult = resultDAO.update(result);
     if (updatedResult != null) {
+      resultCache.put(id, LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedResult);
     } else {
       ctx.status(404).json(Map.of("message", "Result not found"));
@@ -95,6 +100,7 @@ public class ResultController implements ResourceControllerInterface {
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     if (resultDAO.delete(id)) {
+      resultCache.remove(id);
       ctx.status(204);
     } else {
       ctx.status(404).json(Map.of("message", "Result not found"));
