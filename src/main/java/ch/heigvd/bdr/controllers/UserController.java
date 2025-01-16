@@ -3,7 +3,9 @@ package ch.heigvd.bdr.controllers;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,10 +20,30 @@ import io.javalin.openapi.OpenApiContent;
 import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
+import kotlin.reflect.jvm.internal.impl.descriptors.Visibilities;
 
 public class UserController implements ResourceControllerInterface {
   private final ConcurrentHashMap<Integer, LocalDateTime> userCache = new ConcurrentHashMap<>();
   private final UserDAO userDAO = new UserDAO();
+
+  private LocalDateTime getLastModifiedHeader(Context ctx){
+    String ifModifiedSinceHeader = ctx.header("If-Modified-Since");
+    System.out.println("Date received: " + ifModifiedSinceHeader);
+    LocalDateTime lastKnownModification = null;
+    if (ifModifiedSinceHeader != null) {
+      try {
+        // Try to parse the date in a flexible format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        lastKnownModification = LocalDateTime.parse(ifModifiedSinceHeader, formatter);
+      } catch (Exception e) {
+        // The rest will be managed by the method directly
+        System.out.println("Couldn't parse the date");
+        ctx.status(400).json(Map.of("message", "Invalid 'If-Modified-Since' header format."));
+        return null;
+      }
+    }
+    return lastKnownModification;
+  }
 
   @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", responses = {
       @OpenApiResponse(status = "200", description = "List of all users", content = @OpenApiContent(from = User[].class)),
@@ -29,11 +51,13 @@ public class UserController implements ResourceControllerInterface {
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && !(lastKnownModification.isBefore(Collections.max(userCache.values())))){
-      throw new NotModifiedResponse();
+    List<User> users = userDAO.findAll();
+    // Update the cache in case some users are not in it (Shouldn't happen)
+    for(User u : users) {
+      if(!userCache.containsKey(u.getId())) {
+        userCache.put(u.getId(), LocalDateTime.now());
+      }
     }
-    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.json(userDAO.findAll());
   }
 
@@ -57,8 +81,9 @@ public class UserController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
-    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
-    if(lastKnownModification != null && userCache.get(id).equals(lastKnownModification)) {
+    LocalDateTime lastKnownModification = getLastModifiedHeader(ctx);
+
+    if(lastKnownModification != null && !userCache.isEmpty() && userCache.get(id).equals(lastKnownModification)) {
       throw new NotModifiedResponse();
     }
 

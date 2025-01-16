@@ -5,16 +5,20 @@ import ch.heigvd.bdr.dao.UserDAO;
 import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.ResultDAO;
 import ch.heigvd.bdr.models.*;
+import io.javalin.http.NotModifiedResponse;
 import io.javalin.openapi.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ResultController implements ResourceControllerInterface {
+  private final ConcurrentHashMap<Integer, LocalDateTime> resultCache = new ConcurrentHashMap<>();
   private final ResultDAO resultDAO = new ResultDAO();
   private final UserDAO userDAO = new UserDAO();
 
@@ -49,6 +53,8 @@ public class ResultController implements ResourceControllerInterface {
   @Override
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     Result result = ctx.bodyAsClass(Result.class);
+    resultCache.put(result.getId(), LocalDateTime.now());
+    ctx.header("Last-Modified", LocalDateTime.now().toString());
     ctx.status(201).json(resultDAO.create(result));
   }
 
@@ -60,8 +66,23 @@ public class ResultController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
+    if(lastKnownModification != null && resultCache.get(id).equals(lastKnownModification)) {
+      throw new NotModifiedResponse();
+    }
+
     Result result = resultDAO.findById(id);
+
     if (result != null) {
+      LocalDateTime now;
+      if(resultCache.containsKey(id)) {
+        now = resultCache.get(id);
+      }
+      else{
+        now = LocalDateTime.now();
+        resultCache.put(id, now);
+      }
+      ctx.header("Last-Modified", now.toString());
       ctx.json(result);
     } else {
       ctx.status(404).json(Map.of("message", "Result not found"));
@@ -80,6 +101,8 @@ public class ResultController implements ResourceControllerInterface {
     result.setId(id);
     Result updatedResult = resultDAO.update(result);
     if (updatedResult != null) {
+      resultCache.put(id, LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedResult);
     } else {
       ctx.status(404).json(Map.of("message", "Result not found"));
@@ -95,6 +118,7 @@ public class ResultController implements ResourceControllerInterface {
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     if (resultDAO.delete(id)) {
+      resultCache.remove(id);
       ctx.status(204);
     } else {
       ctx.status(404).json(Map.of("message", "Result not found"));

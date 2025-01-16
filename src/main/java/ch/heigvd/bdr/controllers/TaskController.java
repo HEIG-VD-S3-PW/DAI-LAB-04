@@ -2,12 +2,15 @@ package ch.heigvd.bdr.controllers;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.TaskDAO;
 import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.models.*;
 import io.javalin.http.Context;
+import io.javalin.http.NotModifiedResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -16,6 +19,7 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class TaskController implements ResourceControllerInterface {
+  private final ConcurrentHashMap<Integer, LocalDateTime> taskCache = new ConcurrentHashMap<>();
   private final TaskDAO taskDAO = new TaskDAO();
   private final UserDAO userDAO = new UserDAO();
 
@@ -52,6 +56,8 @@ public class TaskController implements ResourceControllerInterface {
   public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     try {
       Task task = ctx.bodyAsClass(Task.class);
+      taskCache.put(task.getId(), LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.status(201).json(taskDAO.create(task));
     } catch (Exception e) {
       ctx.status(400).json(Map.of("message", "Invalid request data."));
@@ -66,8 +72,23 @@ public class TaskController implements ResourceControllerInterface {
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
+    LocalDateTime lastKnownModification = ctx.headerAsClass("If-Modified-Since", LocalDateTime.class).getOrDefault(null);
+    if(lastKnownModification != null && taskCache.get(id).equals(lastKnownModification)) {
+      throw new NotModifiedResponse();
+    }
+
     Task task = taskDAO.findById(id);
+
     if (task != null) {
+      LocalDateTime now;
+      if(taskCache.containsKey(id)) {
+        now = taskCache.get(id);
+      }
+      else{
+        now = LocalDateTime.now();
+        taskCache.put(id, now);
+      }
+      ctx.header("Last-Modified", now.toString());
       ctx.json(task);
     } else {
       ctx.status(404).json(Map.of("message", "Task not found"));
@@ -87,6 +108,8 @@ public class TaskController implements ResourceControllerInterface {
     task.setId(id);
     Task updatedTask = taskDAO.update(task);
     if (updatedTask != null) {
+      taskCache.put(id, LocalDateTime.now());
+      ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedTask);
     } else {
       ctx.status(404).json(Map.of("message", "Task not found"));
@@ -102,6 +125,7 @@ public class TaskController implements ResourceControllerInterface {
   public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
     if (taskDAO.delete(id)) {
+      taskCache.remove(id);
       ctx.status(204);
     } else {
       ctx.status(404).json(Map.of("message", "Task not found"));
