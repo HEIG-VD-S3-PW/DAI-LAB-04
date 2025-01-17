@@ -59,6 +59,9 @@ You will find all the information you need to use this application in this readm
 
 The code documentation is written with standard `javadoc`.
 
+> [!IMPORTANT]
+> The following instructions are targeted for development environments. On production, you might want to use the following URL: <https://api-heig-dai-pw04.duckdns.org/api/openapi.json>>
+
 Also, the route's documentation (built with the [OpenAPI spec](https://swagger.io/specification/)) can be accessed throught the following url: <http://localhost:8085>. Then, you must specify the following url to fetch the **.json** file containing the documentation: <http://localhost:7000/api/openapi.json>
 
 Notice, that these url's can only be accessed after launching the backend as the *SWAGGER-UI* client. Detailed instructions about how to do this can be found later in this document.
@@ -171,19 +174,13 @@ Even though the deployment instructions using docker can be found later in this 
 2. Go to directory you have just created/copied and create a file named **.env** with the following content:
 
 ```env
-# The fully qualified domain name to access whoami (first instance)
-WHOAMI_1_FULLY_QUALIFIED_DOMAIN_NAME=api-heig-dai-pw04.duckdns.org
-
-# The fully qualified domain name to access whoami (second instance)
-#WHOAMI_2_FULLY_QUALIFIED_DOMAIN_NAME=heig-dai-pw04.duckdns.org
-
 # The image version to use for whoami
 WHOAMI_IMAGE_VERSION=latest
 # The email address for Let's Encrypt
 TRAEFIK_ACME_EMAIL=<YOUR_EMAIL>
 
 # The fully qualified domain name to access Traefik
-TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME=api-heig-dai-pw04.duckdns.org
+TRAEFIK_FULLY_QUALIFIED_DOMAIN_NAME=dashboard-heig-dai-pw04.duckdns.org
 
 # Enable the Traefik dashboard
 TRAEFIK_ENABLE_DASHBOARD=true
