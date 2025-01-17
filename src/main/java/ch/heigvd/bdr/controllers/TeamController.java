@@ -7,6 +7,7 @@ import io.javalin.http.Context;
 import ch.heigvd.bdr.dao.TeamDAO;
 import ch.heigvd.bdr.models.Team;
 import io.javalin.http.NotFoundResponse;
+import io.javalin.http.NotModifiedResponse;
 import io.javalin.openapi.*;
 
 import java.io.IOException;
@@ -20,23 +21,37 @@ public class TeamController implements ResourceControllerInterface {
   private final TeamDAO teamDAO = new TeamDAO();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", responses = {
-      @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team.class)),
+  @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", headers = {
+      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
+  }, responses = {
+      @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team[].class)),
+      @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    List<Team> teams = teamDAO.findAll();
-    for (Team t : teams) {
-      if (!teamCache.containsKey(t.getId())) {
-        teamCache.put(t.getId(), LocalDateTime.now());
-      }
+    LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
+    LocalDateTime latestModification = teamCache.values().stream().max(LocalDateTime::compareTo).orElse(null);
+
+    if (lastKnownModification != null && latestModification != null
+        && !UtilsController.isModifiedSince(latestModification, lastKnownModification)) {
+      throw new NotModifiedResponse();
     }
+
+    List<Team> teams = teamDAO.findAll();
+    LocalDateTime now = LocalDateTime.now();
+    for (Team t : teams) {
+      teamCache.put(t.getId(), now);
+    }
+    ctx.header("Last-Modified", now.toString());
     ctx.json(teams);
   }
 
   @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
-      @OpenApiResponse(status = "201", description = "Team created successfully", content = @OpenApiContent(from = Team.class)),
+      @OpenApiResponse(status = "201", description = "Team created successfully", content = @OpenApiContent(from = Team.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
+      }),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -47,8 +62,18 @@ public class TeamController implements ResourceControllerInterface {
     ctx.status(201).json(teamDAO.create(team));
   }
 
-  @OpenApi(path = "/teams/{id}", methods = HttpMethod.GET, operationId = "getTeamById", summary = "Get team by ID", description = "Fetches a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Team found", content = @OpenApiContent(from = Team.class)),
+  @OpenApi(path = "/teams/{id}", methods = HttpMethod.GET, operationId = "getTeamById", summary = "Get team by ID", description = """
+      Fetches a team by its ID. Supports conditional retrieval using If-Modified-Since header.
+      The timestamp comparison ignores nanoseconds for cache validation.
+      Returns 304 Not Modified if the resource hasn't changed since the specified timestamp.
+      """, tags = "Teams", headers = {
+      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp. Returns 304 if resource unchanged since this time.")
+  }, pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "Team found", content = @OpenApiContent(from = Team.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted timestamp of last modification")
+      }),
+      @OpenApiResponse(status = "304", description = "Team not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "404", description = "Team not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -71,7 +96,9 @@ public class TeamController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/teams/{id}", methods = HttpMethod.PUT, operationId = "updateTeam", summary = "Update team by ID", description = "Updates a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated team details", content = @OpenApiContent(from = Team.class)), responses = {
-      @OpenApiResponse(status = "200", description = "Team updated successfully", content = @OpenApiContent(from = Team.class)),
+      @OpenApiResponse(status = "200", description = "Team updated successfully", content = @OpenApiContent(from = Team.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
+      }),
       @OpenApiResponse(status = "404", description = "Team not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -164,7 +191,7 @@ public class TeamController implements ResourceControllerInterface {
   }
 
   @OpenApi(path = "/teams/{id}/users", methods = HttpMethod.GET, operationId = "getTeamMembers", summary = "Get users of a team", description = "Returns a list of users belonging to the specified team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-      @OpenApiResponse(status = "200", description = "List of users in the team", content = @OpenApiContent(from = User.class)),
+      @OpenApiResponse(status = "200", description = "List of users in the team", content = @OpenApiContent(from = User[].class)),
       @OpenApiResponse(status = "404", description = "Team not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })

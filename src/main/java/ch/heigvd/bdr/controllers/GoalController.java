@@ -14,7 +14,6 @@ import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.misc.StringHelper;
 import ch.heigvd.bdr.models.*;
 import io.javalin.http.Context;
-import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -27,10 +26,15 @@ public class GoalController implements ResourceControllerInterface {
   private final GoalDAO goalDAO = new GoalDAO();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals", description = "Returns a list of all goals.", tags = "Goals", headers = {
+  @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals for a given user", description = "Returns a list of all goals. Supports RFC 1123 formatted If-Modified-Since header for cache validation.", tags = "Goals", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
   }, responses = {
-      @OpenApiResponse(status = "200", description = "List of all goals", content = @OpenApiContent(from = Goal.class)),
+      @OpenApiResponse(status = "200", description = "List of goals", content = @OpenApiContent(from = Goal[].class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "RFC 1123 formatted timestamp of last modification")
+      }),
+      @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -48,17 +52,34 @@ public class GoalController implements ResourceControllerInterface {
       return;
     }
 
-    List<Goal> goals = goalDAO.getGoalsByUserID(user.getId());
-    for (Goal g : goals) {
-      if (!goalCache.containsKey(g.getId())) {
-        goalCache.put(g.getId(), LocalDateTime.now());
+    // Check if we have a valid If-Modified-Since header
+    LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
+    if (lastKnownModification != null) {
+      // If we have a cache entry for this user's goal list
+      if (goalCache.containsKey(id)) {
+        // Check if the list has been modified since the client's last fetch
+        if (UtilsController.isModifiedSince(goalCache.get(id), lastKnownModification)) {
+          ctx.status(304).json(Map.of("message", "Not modified"));
+          return;
+        }
       }
     }
+
+    List<Goal> goals = goalDAO.getGoalsByUserID(user.getId());
+
+    LocalDateTime now = LocalDateTime.now();
+    goalCache.put(id, now);
+
+    ctx.header("Last-Modified", now.toString());
+
     ctx.json(goals);
   }
 
-  @OpenApi(path = "/goals", methods = HttpMethod.POST, operationId = "createGoal", summary = "Create a new goal", description = "Creates a new goal.", tags = "Goals", requestBody = @OpenApiRequestBody(description = "Goal details", content = @OpenApiContent(from = Goal.class)), responses = {
-      @OpenApiResponse(status = "201", description = "Goal created successfully", content = @OpenApiContent(from = Goal.class)),
+  @OpenApi(path = "/goals", methods = HttpMethod.POST, operationId = "createGoal", summary = "Create a new goal", description = "Creates a new goal and sets its Last-Modified timestamp in the cache.", tags = "Goals", requestBody = @OpenApiRequestBody(description = "Goal details", content = @OpenApiContent(from = Goal.class)), responses = {
+      @OpenApiResponse(status = "201", description = "Goal created successfully", content = @OpenApiContent(from = Goal.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
+      }),
+      @OpenApiResponse(status = "400", description = "Bad request"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -69,8 +90,18 @@ public class GoalController implements ResourceControllerInterface {
     ctx.status(201).json(goalDAO.create(goal));
   }
 
-  @OpenApi(path = "/goals/{id}", methods = HttpMethod.GET, operationId = "getGoalById", summary = "Get goal by ID", description = "Fetches a goal by its ID.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Goal found", content = @OpenApiContent(from = Goal.class)),
+  @OpenApi(path = "/goals/{id}", methods = HttpMethod.GET, operationId = "getGoalById", summary = "Get goal by ID", description = """
+      Fetches a goal by its ID. Supports conditional retrieval using If-Modified-Since header.
+      The timestamp comparison ignores nanoseconds for cache validation.
+      Returns 304 Not Modified if the resource hasn't changed since the specified timestamp.
+      """, tags = "Goals", headers = {
+      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp. Returns 304 if resource unchanged since this time.")
+  }, pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "Goal found", content = @OpenApiContent(from = Goal.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted timestamp of last modification")
+      }),
+      @OpenApiResponse(status = "304", description = "Goal not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "404", description = "Goal not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -88,12 +119,14 @@ public class GoalController implements ResourceControllerInterface {
       UtilsController.sendResponse(ctx, goalCache, goal.getId());
       ctx.json(goal);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "Goal not found"));
     }
   }
 
-  @OpenApi(path = "/goals/{id}", methods = HttpMethod.PUT, operationId = "updateGoal", summary = "Update goal by ID", description = "Updates a goal by its ID.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated goal details", content = @OpenApiContent(from = Goal.class)), responses = {
-      @OpenApiResponse(status = "200", description = "Goal updated successfully", content = @OpenApiContent(from = Goal.class)),
+  @OpenApi(path = "/goals/{id}", methods = HttpMethod.PUT, operationId = "updateGoal", summary = "Update goal by ID", description = "Updates a goal by its ID and updates its Last-Modified timestamp in the cache.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated goal details", content = @OpenApiContent(from = Goal.class)), responses = {
+      @OpenApiResponse(status = "200", description = "Goal updated successfully", content = @OpenApiContent(from = Goal.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
+      }),
       @OpenApiResponse(status = "404", description = "Goal not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -108,12 +141,12 @@ public class GoalController implements ResourceControllerInterface {
       ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedGoal);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "Goal not found"));
     }
   }
 
-  @OpenApi(path = "/goals/{id}", methods = HttpMethod.DELETE, operationId = "deleteGoal", summary = "Delete goal by ID", description = "Deletes a goal by its ID.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Goal deleted successfully"),
+  @OpenApi(path = "/goals/{id}", methods = HttpMethod.DELETE, operationId = "deleteGoal", summary = "Delete goal by ID", description = "Deletes a goal by its ID and removes its entry from the cache.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "204", description = "Goal deleted successfully"),
       @OpenApiResponse(status = "404", description = "Goal not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -124,7 +157,7 @@ public class GoalController implements ResourceControllerInterface {
       goalCache.remove(id);
       ctx.status(204);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "Goal not found"));
     }
   }
 }

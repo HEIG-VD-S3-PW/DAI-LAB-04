@@ -174,6 +174,32 @@ public final class Main /* implements Handler */ {
       ctx.result("hello");
     }, AuthRole.ANY);
 
+    UserController userController = new UserController();
+    app.get("/users", userController::all, AuthRole.ANY);
+    app.get("/users/{id}", userController::show, AuthRole.ANY);
+    app.post("/users", userController::create, AuthRole.ANY);
+    app.put("/users/{id}", userController::update, AuthRole.ANY);
+    app.delete("/users/{id}", userController::delete, AuthRole.ANY);
+
+    TeamController teamController = new TeamController();
+    app.get("/teams", teamController::all);
+    app.get("/teams/{id}", teamController::show, AuthRole.ANY);
+    app.post("/teams", teamController::create, AuthRole.ANY);
+    app.put("/teams/{id}", teamController::update, AuthRole.ANY);
+    app.delete("/teams/{id}", teamController::delete, AuthRole.ANY);
+    app.post("/teams/{id}/join", teamController::join, AuthRole.ANY);
+    app.post("/teams/{id}/leave", teamController::leave, AuthRole.ANY);
+    app.get("/teams/{id}/users", teamController::getTeamMembers, AuthRole.ANY);
+    app.post("/teams/{id}/manager", teamController::becomeManager, AuthRole.ANY);
+    app.delete("/teams/{id}/manager", teamController::removeManager, AuthRole.ANY);
+
+    ProjectController projectController = new ProjectController();
+    app.get("/projects", projectController::all, AuthRole.ANY);
+    app.get("/projects/{id}", projectController::show, AuthRole.ANY);
+    app.post("/projects", projectController::create, AuthRole.ANY);
+    app.put("/projects/{id}", projectController::update, AuthRole.ANY);
+    app.delete("/projects/{id}", projectController::delete, AuthRole.ANY);
+
     // Goal routes
     GoalController goalController = new GoalController();
     app.get("/goals", goalController::all, AuthRole.ANY);
@@ -194,21 +220,21 @@ public final class Main /* implements Handler */ {
     TaskController taskController = new TaskController();
     app.get("/tasks", taskController::all, AuthRole.ANY);
     app.get("/tasks/{id}", taskController::show, AuthRole.ANY);
-    app.post("/tasks", taskController::create, AuthRole.SUPER);
-    app.put("/tasks/{id}", taskController::update, AuthRole.SUPER);
-    app.delete("/tasks/{id}", taskController::delete, AuthRole.SUPER);
+    app.post("/tasks", taskController::create, AuthRole.ANY);
+    app.put("/tasks/{id}", taskController::update, AuthRole.ANY);
+    app.delete("/tasks/{id}", taskController::delete, AuthRole.ANY);
     app.get("/tasks/{id}/subtasks", taskController::subtasks, AuthRole.ANY);
-    app.post("/tasks/{id}/subtasks", taskController::addSubtaskRelationship, AuthRole.SUPER);
-    app.patch("/tasks/{id}/subtasks/{subtaskId}", taskController::updateSubtaskRequired, AuthRole.SUPER);
-    app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship, AuthRole.SUPER);
-    app.post("/tasks/{id}/materialNeeds", taskController::addMaterialNeeds, AuthRole.SUPER);
-    app.post("/tasks/{id}/collaboratorNeeds", taskController::addCollaboratorNeeds, AuthRole.SUPER);
+    app.post("/tasks/{id}/subtasks", taskController::addSubtaskRelationship, AuthRole.ANY);
+    app.patch("/tasks/{id}/subtasks/{subtaskId}", taskController::updateSubtaskRequired, AuthRole.ANY);
+    app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship, AuthRole.ANY);
+    app.post("/tasks/{id}/materialNeeds", taskController::addMaterialNeeds, AuthRole.ANY);
+    app.post("/tasks/{id}/collaboratorNeeds", taskController::addCollaboratorNeeds, AuthRole.ANY);
     app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds, AuthRole.ANY);
     app.get("/tasks/{id}/collaboratorNeeds", taskController::getCollaboratorNeeds, AuthRole.ANY);
-    app.delete("/tasks/{id}/materialNeeds/{type}", taskController::deleteMaterialNeed, AuthRole.SUPER);
-    app.delete("/tasks/{id}/collaboratorNeeds/{type}", taskController::deleteCollaboratorNeed, AuthRole.SUPER);
-    app.put("/tasks/{id}/materialNeeds/{type}", taskController::updateMaterialNeed, AuthRole.SUPER);
-    app.put("/tasks/{id}/collaboratorNeeds/{type}", taskController::updateCollaboratorNeed, AuthRole.SUPER);
+    app.delete("/tasks/{id}/materialNeeds/{type}", taskController::deleteMaterialNeed, AuthRole.ANY);
+    app.delete("/tasks/{id}/collaboratorNeeds/{type}", taskController::deleteCollaboratorNeed, AuthRole.ANY);
+    app.put("/tasks/{id}/materialNeeds/{type}", taskController::updateMaterialNeed, AuthRole.ANY);
+    app.put("/tasks/{id}/collaboratorNeeds/{type}", taskController::updateCollaboratorNeed, AuthRole.ANY);
 
     HealthController healthController = new HealthController();
     app.get("/health", healthController::checkHealth);

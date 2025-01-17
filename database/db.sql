@@ -131,8 +131,6 @@ CREATE TABLE "Task"(
 	CONSTRAINT PK_Task PRIMARY KEY(id),
 	CONSTRAINT UC_Task_starts_at UNIQUE(startsAt),
 	CONSTRAINT FK_Task_resultId FOREIGN KEY (resultId) REFERENCES "Result"(id) ON DELETE CASCADE ON UPDATE CASCADE
-	--,
---	CONSTRAINT CK_Task_starts_at CHECK (startsAt > CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "Task_Subtask" (

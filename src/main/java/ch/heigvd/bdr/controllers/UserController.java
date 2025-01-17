@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,18 +23,32 @@ public class UserController implements ResourceControllerInterface {
   private final ConcurrentHashMap<Integer, LocalDateTime> userCache = new ConcurrentHashMap<>();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", responses = {
+  @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", headers = {
+      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
+  }, responses = {
       @OpenApiResponse(status = "200", description = "List of all users", content = @OpenApiContent(from = User[].class)),
+      @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    List<User> users = userDAO.findAll();
-    for(User u : users) {
-      if(!userCache.containsKey(u.getId())) {
-        userCache.put(u.getId(), LocalDateTime.now());
-      }
+
+    LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
+    LocalDateTime latestModification = userCache.values().stream().max(LocalDateTime::compareTo).orElse(null);
+
+    if (lastKnownModification != null && latestModification != null
+        && !UtilsController.isModifiedSince(latestModification, lastKnownModification)) {
+      ctx.status(304).json(Map.of("message", "Not modified"));
+      return;
     }
+
+    List<User> users = userDAO.findAll();
+    LocalDateTime now = LocalDateTime.now();
+    for (User u : users) {
+      userCache.put(u.getId(), now);
+    }
+    ctx.header("Last-Modified", now.toString());
     ctx.json(users);
   }
 
@@ -58,7 +73,7 @@ public class UserController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if(UtilsController.checkModif(ctx, userCache, id) == -1){
+    if (UtilsController.checkModif(ctx, userCache, id) == -1) {
       return;
     }
 
