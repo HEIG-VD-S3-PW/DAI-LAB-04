@@ -26,7 +26,7 @@ public class TeamController implements ResourceControllerInterface {
   }, responses = {
       @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team[].class)),
       @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
-      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
+      @OpenApiResponse(status = "400", description = "Bad request"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -52,6 +52,7 @@ public class TeamController implements ResourceControllerInterface {
       @OpenApiResponse(status = "201", description = "Team created successfully", content = @OpenApiContent(from = Team.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
       }),
+      @OpenApiResponse(status = "400", description = "Bad Request"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -81,9 +82,7 @@ public class TeamController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if (UtilsController.checkModif(ctx, teamCache, id) == -1) {
-      return;
-    }
+    UtilsController.checkModif(ctx, teamCache, id);
 
     Team team = teamDAO.findById(id);
 

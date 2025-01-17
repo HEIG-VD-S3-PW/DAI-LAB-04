@@ -13,9 +13,11 @@ DROP FUNCTION IF EXISTS check_task_subtask_relation;
 DROP TRIGGER IF EXISTS check_on_task_done ON "Task";
 DROP FUNCTION IF EXISTS check_dependencies_on_task_done;
 
-DROP TRIGGER IF EXISTS taskDeletion ON "Task";
+DROP TRIGGER IF EXISTS task_deletion ON "Task";
 DROP FUNCTION IF EXISTS check_task_deletion;
 
+DROP TRIGGER IF EXISTS check_task_dependencies ON "Task_Subtask"
+DROP FUNCTION IF EXISTS task_dependencies;
 
 DROP TABLE IF EXISTS "Result";
 DROP TABLE IF EXISTS "Goal";
@@ -341,7 +343,48 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER taskDeletion 
+CREATE OR REPLACE TRIGGER task_deletion 
 BEFORE DELETE ON "Task"
 FOR EACH ROW 
 EXECUTE FUNCTION check_task_deletion();
+
+
+CREATE OR REPLACE FUNCTION task_dependencies()
+RETURNS TRIGGER AS $$
+DECLARE
+    task_project_id INT;
+    subtask_project_id INT;
+BEGIN
+    -- Get the project ID for the main task
+    SELECT g.projectId
+    INTO task_project_id
+    FROM "Task" t
+    INNER JOIN "Result" r ON t.resultId = r.id
+    INNER JOIN "Goal" g ON r.goalId = g.id
+    WHERE t.id = NEW.taskId;
+
+    -- Get the project ID for the subtask
+    SELECT g.projectId
+    INTO subtask_project_id
+    FROM "Task" t
+    INNER JOIN "Result" r ON t.resultId = r.id
+    INNER JOIN "Goal" g ON r.goalId = g.id
+    WHERE t.id = NEW.subtaskId;
+
+    -- Compare project IDs
+    IF task_project_id IS DISTINCT FROM subtask_project_id THEN
+        RAISE EXCEPTION 'Task and subtask must belong to the same project. Task project: %, Subtask project: %',
+            task_project_id, subtask_project_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE OR REPLACE TRIGGER check_task_dependencies
+BEFORE INSERT OR UPDATE ON "Task_Subtask"
+FOR EACH ROW
+EXECUTE FUNCTION task_dependencies();
+

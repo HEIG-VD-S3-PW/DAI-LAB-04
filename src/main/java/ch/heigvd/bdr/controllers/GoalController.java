@@ -109,9 +109,7 @@ public class GoalController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if (UtilsController.checkModif(ctx, goalCache, id) == -1) {
-      return;
-    }
+    UtilsController.checkModif(ctx, goalCache, id);
 
     Goal goal = goalDAO.findById(id);
 
@@ -127,6 +125,7 @@ public class GoalController implements ResourceControllerInterface {
       @OpenApiResponse(status = "200", description = "Goal updated successfully", content = @OpenApiContent(from = Goal.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
       }),
+      @OpenApiResponse(status = "400", description = "Bad request"),
       @OpenApiResponse(status = "404", description = "Goal not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })

@@ -110,9 +110,7 @@ public class TaskController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if (UtilsController.checkModif(ctx, taskCache, id) == -1) {
-      return;
-    }
+    UtilsController.checkModif(ctx, taskCache, id);
 
     Task task = taskDAO.findById(id);
 
@@ -128,6 +126,7 @@ public class TaskController implements ResourceControllerInterface {
       @OpenApiResponse(status = "200", description = "Task updated successfully", content = @OpenApiContent(from = Task.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
       }),
+      @OpenApiResponse(status = "400", description = "Bad request"),
       @OpenApiResponse(status = "404", description = "Task not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })

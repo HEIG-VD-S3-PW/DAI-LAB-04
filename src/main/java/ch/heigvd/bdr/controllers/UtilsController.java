@@ -22,7 +22,6 @@ public class UtilsController {
                 // Convert to LocalDateTime for comparison with your cache
                 lastKnownModification = headerDateTime.toLocalDateTime();
             } catch (Exception e) {
-                System.out.println("Couldn't parse the date: " + e);
                 ctx.status(400).json(Map.of("message", "Invalid 'If-Modified-Since' header format."));
                 return null;
             }
@@ -52,16 +51,15 @@ public class UtilsController {
         ctx.header("Last-Modified", now.toString());
     }
 
-    public static int checkModif(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer id) {
+    public static void checkModif(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer id) {
         LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
 
         if (lastKnownModification == null) {
-            return -1;
+            return;
         }
 
         if (UtilsController.isModifiedSince(cache.get(id), lastKnownModification)) {
             throw new NotModifiedResponse();
         }
-        return id;
     }
 }

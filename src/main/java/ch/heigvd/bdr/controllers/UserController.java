@@ -54,6 +54,7 @@ public class UserController implements ResourceControllerInterface {
 
   @OpenApi(path = "/users", methods = HttpMethod.POST, operationId = "createUser", summary = "Create a new user", description = "Creates a new user in the system.", tags = "Users", requestBody = @OpenApiRequestBody(description = "User details", content = @OpenApiContent(from = User.class)), responses = {
       @OpenApiResponse(status = "201", description = "User created successfully", content = @OpenApiContent(from = User.class)),
+      @OpenApiResponse(status = "400", description = "Bad Request"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -73,9 +74,7 @@ public class UserController implements ResourceControllerInterface {
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
 
-    if (UtilsController.checkModif(ctx, userCache, id) == -1) {
-      return;
-    }
+    UtilsController.checkModif(ctx, userCache, id);
 
     User user = userDAO.findById(id);
 
@@ -83,12 +82,13 @@ public class UserController implements ResourceControllerInterface {
       UtilsController.sendResponse(ctx, userCache, user.getId());
       ctx.json(user);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "User not found"));
     }
   }
 
   @OpenApi(path = "/users/{id}", methods = HttpMethod.PUT, operationId = "updateUser", summary = "Update user by ID", description = "Updates user information by ID.", tags = "Users", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated user details", content = @OpenApiContent(from = User.class)), responses = {
       @OpenApiResponse(status = "200", description = "User updated successfully", content = @OpenApiContent(from = User.class)),
+      @OpenApiResponse(status = "400", description = "Bad Request"),
       @OpenApiResponse(status = "404", description = "User not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -103,7 +103,7 @@ public class UserController implements ResourceControllerInterface {
       ctx.header("Last-Modified", LocalDateTime.now().toString());
       ctx.json(updatedUser);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "User not found"));
     }
   }
 
@@ -119,7 +119,7 @@ public class UserController implements ResourceControllerInterface {
       userCache.remove(id);
       ctx.status(204);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "User not found"));
     }
   }
 
