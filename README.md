@@ -17,6 +17,7 @@
         <li><a href="#setup-web-infrastructure">Setup web infrastructure</a></li>
         <li><a href="#development">Development<a></li>
         <li><a href="#usage">Usage<a></li>
+        <li><a href="#examples">Examples<a></li>
       </ul>
     </li>
     <li><a href="#contributing">Contributions</a></li>
@@ -457,6 +458,66 @@ Caching has been setup using the traefik middleware. The current configuration c
 Currently, the maxTtl has been set to 600 seconds but be carefull, the time after which an HTTP response is no longer cached will be the lowest value between what is configured in maxTtl and the specified expiry time in the HTTP response headers.
 
 We also specified a memory.limit of 3Gi for the cache. Feel free to change the configuration according to your proxy's specified memory limit.
+
+## Examples
+
+### Create
+
+```sh
+curl -i -X POST -H "Content-Type: application/json" -d '{"name": "New Project"}' https://api-heig-dai-pw04.duckdns.org/projects
+HTTP/1.1 201 Created
+Date: Fri, 17 Jan 2025 11:10:46 GMT
+Content-Type: application/json
+Last-Modified: 2025-01-17T11:10:46
+Content-Length: 30
+
+{"id":23,"name":"New Project"}
+```
+
+### List all
+
+```sh
+curl -i -X GET https://api-heig-dai-pw04.duckdns.org/projects
+HTTP/1.1 200 OK
+Date: Fri, 17 Jan 2025 11:10:46 GMT
+Content-Type: application/json
+Content-Length: 32
+
+[{"id":23,"name":"New Project"}]
+```
+
+### Show
+
+```sh
+curl -i -X GET https://api-heig-dai-pw04.duckdns.org/projects/23
+HTTP/1.1 200 OK
+Date: Fri, 17 Jan 2025 11:10:46 GMT
+Content-Type: application/json
+Last-Modified: 2025-01-17T11:10:46
+Content-Length: 30
+
+{"id":23,"name":"New Project"}
+```
+
+### Update
+
+```sh
+curl -i -X PUT -H "Content-Type: application/json" -d '{"name": "Updated Project"}' https://api-heig-dai-pw04.duckdns.org/projects/23
+HTTP/1.1 204 No Content
+Date: Fri, 17 Jan 2025 11:10:46 GMT
+Content-Type: text/plain
+Last-Modified: 2025-01-17T11:10:46
+```
+
+### Delete
+
+```sh
+curl -i -X DELETE https://api-heig-dai-pw04.duckdns.org/projects/23
+
+HTTP/1.1 204 No Content
+Date: Fri, 17 Jan 2025 11:10:46 GMT
+Content-Type: text/plain
+```
 
 <!-- CONTRIBUTING -->
 
