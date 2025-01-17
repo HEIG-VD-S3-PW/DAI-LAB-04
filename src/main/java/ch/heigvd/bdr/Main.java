@@ -10,7 +10,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+
+import javax.management.relation.Role;
+
+import org.eclipse.jetty.security.UserDataConstraint;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.postgresql.util.PSQLException;
@@ -18,15 +23,21 @@ import org.postgresql.util.PSQLException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.node.TextNode;
+
+import ch.heigvd.AuthRole;
 import ch.heigvd.bdr.controllers.*;
 import ch.heigvd.bdr.dao.UserDAO;
 import ch.heigvd.bdr.exceptions.DatabaseExceptionHandler;
+import ch.heigvd.bdr.misc.StringHelper;
 import ch.heigvd.bdr.models.User;
+import ch.heigvd.bdr.models.UserRole;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
+import io.javalin.http.UnauthorizedResponse;
 import io.javalin.openapi.*;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
@@ -51,7 +62,7 @@ public final class Main /* implements Handler */ {
 
       config.registerPlugin(new OpenApiPlugin(openApiConfig -> openApiConfig
           .withDocumentationPath(deprecatedDocsPath)
-          .withRoles(Rules.ANONYMOUS)
+          .withRoles(AuthRole.ANY)
           .withDefinitionConfiguration((version, openApiDefinition) -> openApiDefinition
               .withInfo(openApiInfo -> openApiInfo
                   .description("An Objective-key-result app")
@@ -109,6 +120,19 @@ public final class Main /* implements Handler */ {
       DatabaseExceptionHandler.handleGenericException(e, ctx);
     });
 
+    app.beforeMatched(ctx -> {
+      var userRole = getUserRole(ctx);
+      var permittedRoles = ctx.routeRoles();
+      if (permittedRoles.contains(AuthRole.ANY)) {
+        return; // anyone can access
+      }
+
+      if (!ctx.routeRoles().contains(userRole)) {
+        throw new UnauthorizedResponse();
+      }
+
+    });
+
     routes(app);
 
     String portEnv = System.getenv("JAVALIN_PORT");
@@ -122,71 +146,95 @@ public final class Main /* implements Handler */ {
     app.start("0.0.0.0", port);
   }
 
+  private static AuthRole getUserRole(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
+      return AuthRole.NONE;
+    }
+
+    int id = Integer.parseInt(userId);
+
+    UserDAO userDAO = new UserDAO();
+    User user = userDAO.findById(id);
+    if (user == null) {
+      return AuthRole.NONE;
+    }
+
+    if (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.MANAGER) {
+      return AuthRole.SUPER;
+    }
+
+    return AuthRole.NORMAL;
+
+  }
+
   private static void routes(Javalin app) {
     // routes
     app.get("/", ctx -> {
       ctx.result("hello");
-    });
+    }, AuthRole.ANY);
 
     UserController userController = new UserController();
-    app.get("/users", userController::all);
-    app.get("/users/{id}", userController::show);
-    app.post("/users", userController::create);
-    app.put("/users/{id}", userController::update);
-    app.delete("/users/{id}", userController::delete);
+    app.get("/users", userController::all, AuthRole.ANY);
+    app.get("/users/{id}", userController::show, AuthRole.ANY);
+    app.post("/users", userController::create, AuthRole.ANY);
+    app.put("/users/{id}", userController::update, AuthRole.ANY);
+    app.delete("/users/{id}", userController::delete, AuthRole.ANY);
 
     TeamController teamController = new TeamController();
     app.get("/teams", teamController::all);
-    app.get("/teams/{id}", teamController::show);
-    app.post("/teams", teamController::create);
-    app.put("/teams/{id}", teamController::update);
-    app.delete("/teams/{id}", teamController::delete);
-    app.post("/teams/{id}/join", teamController::join);
-    app.post("/teams/{id}/leave", teamController::leave);
-    app.get("/teams/{id}/users", teamController::getTeamMembers);
-    app.post("/teams/{id}/manager", teamController::becomeManager);
-    app.delete("/teams/{id}/manager", teamController::removeManager);
+    app.get("/teams/{id}", teamController::show, AuthRole.ANY);
+    app.post("/teams", teamController::create, AuthRole.ANY);
+    app.put("/teams/{id}", teamController::update, AuthRole.ANY);
+    app.delete("/teams/{id}", teamController::delete, AuthRole.ANY);
+    app.post("/teams/{id}/join", teamController::join, AuthRole.ANY);
+    app.post("/teams/{id}/leave", teamController::leave, AuthRole.ANY);
+    app.get("/teams/{id}/users", teamController::getTeamMembers, AuthRole.ANY);
+    app.post("/teams/{id}/manager", teamController::becomeManager, AuthRole.ANY);
+    app.delete("/teams/{id}/manager", teamController::removeManager, AuthRole.ANY);
 
     ProjectController projectController = new ProjectController();
-    app.get("/projects", projectController::all);
-    app.get("/projects/{id}", projectController::show);
-    app.post("/projects", projectController::create);
-    app.put("/projects/{id}", projectController::update);
-    app.delete("/projects/{id}", projectController::delete);
+    app.get("/projects", projectController::all, AuthRole.ANY);
+    app.get("/projects/{id}", projectController::show, AuthRole.ANY);
+    app.post("/projects", projectController::create, AuthRole.ANY);
+    app.put("/projects/{id}", projectController::update, AuthRole.ANY);
+    app.delete("/projects/{id}", projectController::delete, AuthRole.ANY);
 
+    // Goal routes
     GoalController goalController = new GoalController();
-    app.get("/goals", goalController::all);
-    app.get("/goals/{id}", goalController::show);
-    app.post("/goals", goalController::create);
-    app.put("/goals/{id}", goalController::update);
-    app.delete("/goals/{id}", goalController::delete);
+    app.get("/goals", goalController::all, AuthRole.ANY);
+    app.get("/goals/{id}", goalController::show, AuthRole.ANY);
+    app.post("/goals", goalController::create, AuthRole.SUPER);
+    app.put("/goals/{id}", goalController::update, AuthRole.SUPER);
+    app.delete("/goals/{id}", goalController::delete, AuthRole.SUPER);
 
+    // Result routes
     ResultController resultController = new ResultController();
-    app.get("/results", resultController::all);
-    app.get("/results/{id}", resultController::show);
-    app.post("/results", resultController::create);
-    app.put("/results/{id}", resultController::update);
-    app.delete("/results/{id}", resultController::delete);
+    app.get("/results", resultController::all, AuthRole.ANY);
+    app.get("/results/{id}", resultController::show, AuthRole.ANY);
+    app.post("/results", resultController::create, AuthRole.SUPER);
+    app.put("/results/{id}", resultController::update, AuthRole.SUPER);
+    app.delete("/results/{id}", resultController::delete, AuthRole.SUPER);
 
+    // Task routes
     TaskController taskController = new TaskController();
-    app.get("/tasks", taskController::all);
-    app.get("/tasks/{id}", taskController::show);
-    app.post("/tasks", taskController::create);
-    app.put("/tasks/{id}", taskController::update);
-    app.delete("/tasks/{id}", taskController::delete);
-    app.get("/tasks/{id}/subtasks", taskController::subtasks);
-    app.post("/tasks/{id}/subtasks", taskController::addSubtaskRelationship);
-    app.patch("/tasks/{id}/subtasks/{subtaskId}", taskController::updateSubtaskRequired);
-    app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship);
-
-    app.post("/tasks/{id}/materialNeeds", taskController::addMaterialNeeds);
-    app.post("/tasks/{id}/collaboratorNeeds", taskController::addCollaboratorNeeds);
-    app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds);
-    app.get("/tasks/{id}/collaboratorNeeds", taskController::getCollaboratorNeeds);
-    app.delete("/tasks/{id}/materialNeeds/{type}", taskController::deleteMaterialNeed);
-    app.delete("/tasks/{id}/collaboratorNeeds/{type}", taskController::deleteCollaboratorNeed);
-    app.put("/tasks/{id}/materialNeeds/{type}", taskController::updateMaterialNeed);
-    app.put("/tasks/{id}/collaboratorNeeds/{type}", taskController::updateCollaboratorNeed);
+    app.get("/tasks", taskController::all, AuthRole.ANY);
+    app.get("/tasks/{id}", taskController::show, AuthRole.ANY);
+    app.post("/tasks", taskController::create, AuthRole.ANY);
+    app.put("/tasks/{id}", taskController::update, AuthRole.ANY);
+    app.delete("/tasks/{id}", taskController::delete, AuthRole.ANY);
+    app.get("/tasks/{id}/subtasks", taskController::subtasks, AuthRole.ANY);
+    app.post("/tasks/{id}/subtasks", taskController::addSubtaskRelationship, AuthRole.ANY);
+    app.patch("/tasks/{id}/subtasks/{subtaskId}", taskController::updateSubtaskRequired, AuthRole.ANY);
+    app.delete("/tasks/{id}/subtasks/{subtaskId}", taskController::deleteSubtaskRelationship, AuthRole.ANY);
+    app.post("/tasks/{id}/materialNeeds", taskController::addMaterialNeeds, AuthRole.ANY);
+    app.post("/tasks/{id}/collaboratorNeeds", taskController::addCollaboratorNeeds, AuthRole.ANY);
+    app.get("/tasks/{id}/materialNeeds", taskController::getMaterialNeeds, AuthRole.ANY);
+    app.get("/tasks/{id}/collaboratorNeeds", taskController::getCollaboratorNeeds, AuthRole.ANY);
+    app.delete("/tasks/{id}/materialNeeds/{type}", taskController::deleteMaterialNeed, AuthRole.ANY);
+    app.delete("/tasks/{id}/collaboratorNeeds/{type}", taskController::deleteCollaboratorNeed, AuthRole.ANY);
+    app.put("/tasks/{id}/materialNeeds/{type}", taskController::updateMaterialNeed, AuthRole.ANY);
+    app.put("/tasks/{id}/collaboratorNeeds/{type}", taskController::updateCollaboratorNeed, AuthRole.ANY);
 
     HealthController healthController = new HealthController();
     app.get("/health", healthController::checkHealth);

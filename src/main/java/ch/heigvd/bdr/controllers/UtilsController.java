@@ -17,8 +17,7 @@ public class UtilsController {
             try {
                 // Parse the If-Modified-Since header (RFC 1123 format)
                 ZonedDateTime headerDateTime = ZonedDateTime.parse(
-                        ifModifiedSinceHeader, DateTimeFormatter.RFC_1123_DATE_TIME
-                );
+                        ifModifiedSinceHeader, DateTimeFormatter.RFC_1123_DATE_TIME);
 
                 // Convert to LocalDateTime for comparison with your cache
                 lastKnownModification = headerDateTime.toLocalDateTime();
@@ -27,7 +26,6 @@ public class UtilsController {
                 return null;
             }
         }
-        System.out.println("Date converted: " + lastKnownModification);
         return lastKnownModification;
     }
 
@@ -42,26 +40,25 @@ public class UtilsController {
         return truncatedHeaderTime.equals(truncatedCacheTime);
     }
 
-    public static void sendResponse(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer key){
+    public static void sendResponse(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer key) {
         LocalDateTime now;
-        if(cache.containsKey(key)) {
+        if (cache.containsKey(key)) {
             now = cache.get(key);
-        }
-        else{
+        } else {
             now = LocalDateTime.now();
             cache.put(key, now);
         }
         ctx.header("Last-Modified", now.toString());
     }
 
-    public static void checkModif(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer id){
+    public static void checkModif(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer id) {
         LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
 
-        if(lastKnownModification == null){
-            return ;
+        if (lastKnownModification == null) {
+            return;
         }
 
-        if(UtilsController.isModifiedSince(cache.get(id), lastKnownModification)) {
+        if (UtilsController.isModifiedSince(cache.get(id), lastKnownModification)) {
             throw new NotModifiedResponse();
         }
     }
