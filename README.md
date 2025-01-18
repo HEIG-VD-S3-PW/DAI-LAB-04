@@ -1,4 +1,10 @@
-# ORK - A project management tool
+
+<div align="center">
+  <img src="docs/img/frontend.png" alt="Front-end exemple">
+  <h1>OKR - A project management tool</h1>
+  <p>An intuitive tool to help individuals, teams, and organizations set, track, and achieve their objectives and key results efficiently.</p>
+</div>
+
 
 <a name="readme-top"></a>
 
