@@ -10,7 +10,13 @@ import java.sql.*;
 
 public class DatabaseUtil {
 
-  // Method to establish and return a database connection
+  /**
+   * Method to establish and return a database connection
+   * @return
+   * @throws ClassNotFoundException
+   * @throws IOException
+   * @throws SQLException
+   */
   public static Connection getConnection() throws ClassNotFoundException, IOException, SQLException {
     String url = String.format(
         "jdbc:postgresql://db:%s/%s?options=-c%%20search_path=public",

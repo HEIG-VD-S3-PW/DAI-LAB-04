@@ -2,6 +2,9 @@ package ch.heigvd;
 
 import io.javalin.security.RouteRole;
 
+/**
+ * Used to check user authorizations
+ */
 public enum AuthRole implements RouteRole {
   NONE(-1),
   NORMAL(1), SUPER(2),

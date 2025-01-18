@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Stores all the data to link a task with a material need
+ */
 public class TaskMaterialNeed {
   private int taskId;
   private Material materialNeedType;

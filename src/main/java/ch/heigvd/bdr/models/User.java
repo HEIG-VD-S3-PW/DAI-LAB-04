@@ -2,6 +2,9 @@ package ch.heigvd.bdr.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * Stores all the data related to a user
+ */
 public class User {
   private int id;
   private String firstname;

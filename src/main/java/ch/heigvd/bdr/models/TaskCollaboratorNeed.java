@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Stores all the data to link a task with a collaborator need
+ */
 public class TaskCollaboratorNeed {
   private int taskId;
   private UserRole collaboratorNeedType;

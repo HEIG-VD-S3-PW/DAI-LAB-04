@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Generic interface for all DAOs
+ * @param <T>: entity
+ * @param <ID>: id
+ */
 interface GenericDAO<T, ID> {
   T create(T entity) throws ClassNotFoundException, IOException, SQLException;
 

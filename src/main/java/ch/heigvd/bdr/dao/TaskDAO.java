@@ -9,6 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TaskDAO implements GenericDAO<Task, Integer> {
+
+  /**
+   * Used to get all the data from a database
+   * @param rs: structure that stores all the data
+   * @return: The goal with the result data
+   * @throws SQLException
+   */
   public Task mapToTask(ResultSet rs) throws ClassNotFoundException, SQLException, IOException {
     Task task = new Task();
 
@@ -25,6 +32,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     return task;
   }
 
+  /**
+   * Create a new task
+   * @param task: task to insert
+   * @return: inserted task
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Task create(Task task) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Task\" (title, startsAt, done, priority, deadline, note, tag, resultId) "
@@ -51,6 +66,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Find a task by its id
+   * @param id: id to use for the research
+   * @return: found task
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Task findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"Task\" WHERE id = ?";
@@ -68,6 +91,13 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Find all the tasks
+   * @return: List of the tasks
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public List<Task> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Task> tasks = new ArrayList<>();
@@ -84,6 +114,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Update a task
+   * @param task: task to update with new values
+   * @return: updated task
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Task update(Task task) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Task\" SET title = ?, startsAt = ?, done = ?, priority = ?::\"TaskPriority\", deadline = ?::\"TaskDeadline\", " +
@@ -104,6 +142,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Delete a task
+   * @param id: id of the task to delete
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Task\" WHERE id = ?";
@@ -114,6 +160,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Add material needs to a task
+   * @param taskId: task to edit
+   * @param materialNeed: material need to add
+   * @return: success of the insertion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean addMaterialNeed(int taskId, MaterialNeed materialNeed) throws ClassNotFoundException, SQLException, IOException{
     if(materialNeed.getQuantity() < 0) {
       return false;
@@ -131,6 +186,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Add collaborator needs to a task
+   * @param taskId: task to edit
+   * @param collaboratorNeed: collaborator need to add
+   * @return: success of the insertion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean addCollaboratorNeed(int taskId, CollaboratorNeed collaboratorNeed)
           throws ClassNotFoundException, SQLException, IOException{
 
@@ -148,6 +212,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Update the collaborator needs of a task
+   * @param taskId: task to edit
+   * @param collaboratorNeed: collaborator needs to edit
+   * @return: success of the update
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean updateCollaboratorNeed(int taskId, CollaboratorNeed collaboratorNeed)
           throws ClassNotFoundException, SQLException, IOException{
 
@@ -165,6 +238,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Update the material needs of a task
+   * @param taskId: task to edit
+   * @param materialNeed: material needs to edit
+   * @return: success of the update
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean updateMaterialNeed(int taskId, MaterialNeed materialNeed)
           throws ClassNotFoundException, SQLException, IOException{
 
@@ -182,6 +264,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Get all the material needs of a task
+   * @param task: task to use for research
+   * @return: List of all the material needs
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<MaterialNeed> getTaskMaterialNeeds(Task task)
       throws ClassNotFoundException, SQLException, IOException {
     List<MaterialNeed> materialNeeds = new ArrayList<>();
@@ -200,6 +290,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Get all the collaborator needs of a task
+   * @param task: task to use for research
+   * @return: List of all the collaborator needs
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<CollaboratorNeed> getTaskCollaboratorNeeds(Task task)
           throws ClassNotFoundException, SQLException, IOException {
     List<CollaboratorNeed> collaboratorNeeds = new ArrayList<>();
@@ -218,6 +316,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Delete a certain material need of a task
+   * @param task: task to edit
+   * @param need: need to remove
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean deleteTaskMaterialNeeds(Task task, Material need)
           throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Task_MaterialNeed\" WHERE taskId = ? AND materialNeedType = ?::\"Material\"";
@@ -230,6 +337,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Delete a certain collaborator need of a task
+   * @param task: task to edit
+   * @param need: need to remove
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean deleteTaskCollaboratorNeeds(Task task, UserRole need)
           throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Task_CollaboratorNeed\" WHERE taskId = ? AND collaboratorNeedType = ?::\"UserRole\"";
@@ -242,6 +358,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Get all the subtasks of a task
+   * @param t: task to use for research
+   * @return: list of all the subtasks
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<SubtaskInfo> getSubtasks(Task t)
       throws ClassNotFoundException, SQLException, IOException {
     List<SubtaskInfo> subtasks = new ArrayList<>();
@@ -266,6 +390,16 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Create a relationship between a task and subtask
+   * @param task: main task
+   * @param subtask: sub task
+   * @param required: if the subtasks needs the subtask for its success
+   * @return: result of the insertion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean addSubtaskRelationship(Task task, Task subtask, boolean required)
       throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Task_Subtask\" (taskId, subtaskId, required) VALUES (?, ?, ?)";
@@ -278,6 +412,16 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Update the relationship between a task and a subtask
+   * @param task: main task
+   * @param subtask: sub task
+   * @param required: if the subtasks needs the subtask for its success
+   * @return: result of the update
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean updateSubtaskRequiredProperty(Task task, Task subtask, boolean required)
       throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Task_Subtask\" SET required = ? WHERE taskId = ? AND subtaskId = ?";
@@ -292,6 +436,15 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Delete the relationship between a task and a subtask
+   * @param task: main task
+   * @param subtask: sub task
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean deleteSubtaskRelationship(Task task, Task subtask)
       throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Task_Subtask\" WHERE taskId = ? AND subtaskId = ?";
@@ -303,6 +456,14 @@ public class TaskDAO implements GenericDAO<Task, Integer> {
     }
   }
 
+  /**
+   * Find all the tasks related to a specific user
+   * @param userId: user id to use for the research
+   * @return: List of all the tasks
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<Task> getTasksByUserID(int userId) throws ClassNotFoundException, SQLException, IOException {
     List<Task> tasks = new ArrayList<>();
     String query = """

@@ -17,10 +17,18 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TeamController implements ResourceControllerInterface {
+  // Used to manage the cache for all teams
   private final ConcurrentHashMap<Integer, LocalDateTime> teamCache = new ConcurrentHashMap<>();
   private final TeamDAO teamDAO = new TeamDAO();
   private final UserDAO userDAO = new UserDAO();
 
+  /**
+   * Show all teams
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", headers = {
       @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
   }, responses = {
@@ -48,6 +56,13 @@ public class TeamController implements ResourceControllerInterface {
     ctx.json(teams);
   }
 
+  /**
+   * Create a new team
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
       @OpenApiResponse(status = "201", description = "Team created successfully", content = @OpenApiContent(from = Team.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
@@ -63,6 +78,13 @@ public class TeamController implements ResourceControllerInterface {
     ctx.status(201).json(teamDAO.create(team));
   }
 
+  /**
+   * Show a specific team
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}", methods = HttpMethod.GET, operationId = "getTeamById", summary = "Get team by ID", description = """
       Fetches a team by its ID. Supports conditional retrieval using If-Modified-Since header.
       The timestamp comparison ignores nanoseconds for cache validation.
@@ -94,6 +116,13 @@ public class TeamController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a team
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}", methods = HttpMethod.PUT, operationId = "updateTeam", summary = "Update team by ID", description = "Updates a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated team details", content = @OpenApiContent(from = Team.class)), responses = {
       @OpenApiResponse(status = "200", description = "Team updated successfully", content = @OpenApiContent(from = Team.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
@@ -116,6 +145,13 @@ public class TeamController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a team
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}", methods = HttpMethod.DELETE, operationId = "deleteTeam", summary = "Delete team by ID", description = "Deletes a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "Team deleted successfully"),
       @OpenApiResponse(status = "404", description = "Team not found"),
@@ -132,6 +168,13 @@ public class TeamController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Join a team (for a user)
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}/join", methods = HttpMethod.POST, operationId = "joinTeam", summary = "Join a team", description = "Allows a user to join a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
   }, responses = {
@@ -161,6 +204,13 @@ public class TeamController implements ResourceControllerInterface {
     ctx.status(200).json(Map.of("message", "User joined the team successfully"));
   }
 
+  /**
+   * Leave a team
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}/leave", methods = HttpMethod.POST, operationId = "leaveTeam", summary = "Leave a team", description = "Allows a user to leave a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
       @OpenApiResponse(status = "200", description = "User left the team successfully"),
       @OpenApiResponse(status = "400", description = "User is not a member of the team"),
@@ -189,6 +239,11 @@ public class TeamController implements ResourceControllerInterface {
     ctx.status(200).json(Map.of("message", "User left the team successfully"));
   }
 
+  /**
+   * Get all the members of a team
+   * @param ctx: context to use
+   * @throws Exception
+   */
   @OpenApi(path = "/teams/{id}/users", methods = HttpMethod.GET, operationId = "getTeamMembers", summary = "Get users of a team", description = "Returns a list of users belonging to the specified team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
       @OpenApiResponse(status = "200", description = "List of users in the team", content = @OpenApiContent(from = User[].class)),
       @OpenApiResponse(status = "404", description = "Team not found"),
@@ -204,10 +259,17 @@ public class TeamController implements ResourceControllerInterface {
       return;
     }
     // Récupérer les utilisateurs de l'équipe
-    List<User> users = teamDAO.getMembers(teamId);
+    List<User> users = teamDAO.getTeamMembers(teamId);
     ctx.json(users);
   }
 
+  /**
+   * For the current connected user to become a manager
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.POST, operationId = "becomeManager", summary = "Become manager", description = "Let a member become manager", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
       @OpenApiResponse(status = "200", description = "User left the team successfully"),
       @OpenApiResponse(status = "400", description = "User is not a member of the team"),
@@ -234,6 +296,13 @@ public class TeamController implements ResourceControllerInterface {
     ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
   }
 
+  /**
+   * Remove the manager of a team
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.DELETE, operationId = "removeManager", summary = "Remove manager", description = "Let a manager become a member", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
       @OpenApiResponse(status = "200", description = "User left the team successfully"),
       @OpenApiResponse(status = "400", description = "User is not a member of the team"),

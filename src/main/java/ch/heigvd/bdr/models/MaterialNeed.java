@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Stores all the data related a task's material needs
+ */
 public class MaterialNeed {
   private Material type;
   private int quantity;

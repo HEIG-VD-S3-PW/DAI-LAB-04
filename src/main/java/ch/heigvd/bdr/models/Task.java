@@ -2,6 +2,9 @@ package ch.heigvd.bdr.models;
 
 import java.sql.Timestamp;
 
+/**
+ * Stores all the data related a result's goal
+ */
 public class Task {
   private int id;
   private String title;

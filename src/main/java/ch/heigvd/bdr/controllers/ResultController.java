@@ -17,10 +17,18 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ResultController implements ResourceControllerInterface {
+  // Manages cache for all results
   private final ConcurrentHashMap<Integer, LocalDateTime> resultCache = new ConcurrentHashMap<>();
   private final ResultDAO resultDAO = new ResultDAO();
   private final UserDAO userDAO = new UserDAO();
 
+  /**
+   * Show all results
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/results", methods = HttpMethod.GET, operationId = "getAllResults", summary = "Get all results for a given user", description = "Returns a list of all results for a given user. Supports RFC 1123 formatted If-Modified-Since header for cache validation.", tags = "Results", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
       @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
@@ -71,6 +79,13 @@ public class ResultController implements ResourceControllerInterface {
     ctx.json(results);
   }
 
+  /**
+   * Create a result
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/results", methods = HttpMethod.POST, operationId = "createResult", summary = "Create a new result", description = "Creates a new result.", tags = "Results", requestBody = @OpenApiRequestBody(description = "Result details", content = @OpenApiContent(from = Result.class)), responses = {
       @OpenApiResponse(status = "201", description = "Goal created successfully", content = @OpenApiContent(from = Result.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
@@ -86,6 +101,13 @@ public class ResultController implements ResourceControllerInterface {
     ctx.status(201).json(resultDAO.create(result));
   }
 
+  /**
+   * Show a specific result
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/results/{id}", methods = HttpMethod.GET, operationId = "getResultById", summary = "Get result by ID", description = """
       Fetches a result by its ID. Supports conditional retrieval using If-Modified-Since header.
       The timestamp comparison ignores nanoseconds for cache validation.
@@ -117,6 +139,13 @@ public class ResultController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a result
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/results/{id}", methods = HttpMethod.PUT, operationId = "updateResult", summary = "Update result by ID", description = "Updates a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated result details", content = @OpenApiContent(from = Result.class)), responses = {
       @OpenApiResponse(status = "200", description = "Result updated successfully", content = @OpenApiContent(from = Result.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
@@ -139,6 +168,13 @@ public class ResultController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a result
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/results/{id}", methods = HttpMethod.DELETE, operationId = "deleteResult", summary = "Delete result by ID", description = "Deletes a result by its ID.", tags = "Results", pathParams = @OpenApiParam(name = "id", description = "Result ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "204", description = "Result deleted successfully"),
       @OpenApiResponse(status = "404", description = "Result not found"),

@@ -10,6 +10,9 @@ import java.util.Map;
 
 import ch.heigvd.bdr.DatabaseUtil;
 
+/**
+ * Checks if the database and the API are working properly
+ */
 public class HealthController {
 
     @OpenApi(

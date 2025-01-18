@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Used to define available material
+ */
 public enum Material {
   LICENSE(0),
   SERVER(1),

@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Stores all the data related to a subtask
+ */
 public class SubtaskInfo {
     private Task task;
     private boolean isRequired;
