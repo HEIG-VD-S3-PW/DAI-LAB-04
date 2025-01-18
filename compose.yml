@@ -169,7 +169,7 @@ services:
       # Set a size limit of 3Gi to the overall cache of traefik
       - traefik.http.middlewares.test-http-cache.plugin.httpCache.memory.limit=3Gi
   swagger-ui:
-    profiles: [prod, dev]
+    profiles: [ dev ]
     container_name: swagger-ui
     image: swaggerapi/swagger-ui
     ports:

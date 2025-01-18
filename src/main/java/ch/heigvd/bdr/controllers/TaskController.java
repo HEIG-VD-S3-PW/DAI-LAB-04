@@ -7,9 +7,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.heigvd.bdr.dao.TaskDAO;
+import ch.heigvd.bdr.dao.UserDAO;
+import ch.heigvd.bdr.misc.StringHelper;
 import ch.heigvd.bdr.models.*;
 import io.javalin.http.Context;
-import io.javalin.http.NotFoundResponse;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
 import io.javalin.openapi.OpenApiContent;
@@ -20,26 +21,62 @@ import io.javalin.openapi.OpenApiResponse;
 public class TaskController implements ResourceControllerInterface {
   private final ConcurrentHashMap<Integer, LocalDateTime> taskCache = new ConcurrentHashMap<>();
   private final TaskDAO taskDAO = new TaskDAO();
+  private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks", description = "Returns a list of all tasks.", tags = "Tasks", headers = {
+  @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks for a given user", description = "Returns a list of all tasks.", tags = "Tasks", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
   }, responses = {
-      @OpenApiResponse(status = "200", description = "List of tasks", content = @OpenApiContent(from = Task.class)),
+      @OpenApiResponse(status = "200", description = "List of tasks", content = @OpenApiContent(from = Task[].class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "RFC 1123 formatted timestamp of last modification")
+      }),
+      @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid format / missing required argument"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
   public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    List<Task> tasks = taskDAO.findAll();
-    for (Task t : tasks) {
-      if (!taskCache.containsKey(t.getId())) {
-        taskCache.put(t.getId(), LocalDateTime.now());
+    // Validate user ID header
+    String userId = ctx.header("X-User-ID");
+    if (userId == null || !StringHelper.isInteger(userId)) {
+      ctx.status(400).json(Map.of("message", "Missing header X-User-ID"));
+      return;
+    }
+
+    int id = Integer.parseInt(userId);
+    User user = userDAO.findById(id);
+    if (user == null) {
+      ctx.status(404).json(Map.of("message", "User not found"));
+      return;
+    }
+
+    // Check if we have a valid If-Modified-Since header
+    LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
+    if (lastKnownModification != null) {
+      // If we have a cache entry for this user's task list
+      if (taskCache.containsKey(id)) {
+        // Check if the list has been modified since the client's last fetch
+        if (UtilsController.isModifiedSince(taskCache.get(id), lastKnownModification)) {
+          ctx.status(304).json(Map.of("message", "Not modified"));
+          return;
+        }
       }
     }
+
+    List<Task> tasks = taskDAO.getTasksByUserID(user.getId());
+
+    LocalDateTime now = LocalDateTime.now();
+    taskCache.put(id, now);
+
+    ctx.header("Last-Modified", now.toString());
+
     ctx.json(tasks);
   }
 
   @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
-      @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class)),
+      @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
+      }),
+      @OpenApiResponse(status = "400", description = "Bad request, missing required arguments"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
   @Override
@@ -54,8 +91,18 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/tasks/{id}", methods = HttpMethod.GET, operationId = "getTaskById", summary = "Get task by ID", description = "Fetches a task by its ID.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Task found", content = @OpenApiContent(from = Task.class)),
+  @OpenApi(path = "/tasks/{id}", methods = HttpMethod.GET, operationId = "getTaskById", summary = "Get task by ID", description = """
+      Fetches a task by its ID. Supports conditional retrieval using If-Modified-Since header.
+      The timestamp comparison ignores nanoseconds for cache validation.
+      Returns 304 Not Modified if the resource hasn't changed since the specified timestamp.
+      """, tags = "Tasks", headers = {
+      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp. Returns 304 if resource unchanged since this time.")
+  }, pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "200", description = "Task found", content = @OpenApiContent(from = Task.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted timestamp of last modification")
+      }),
+      @OpenApiResponse(status = "304", description = "Task not modified since If-Modified-Since timestamp"),
+      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "404", description = "Task not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -71,12 +118,15 @@ public class TaskController implements ResourceControllerInterface {
       UtilsController.sendResponse(ctx, taskCache, task.getId());
       ctx.json(task);
     } else {
-      throw new NotFoundResponse();
+      ctx.status(404).json(Map.of("message", "Task not found"));
     }
   }
 
-  @OpenApi(path = "/tasks/{id}", methods = HttpMethod.PUT, operationId = "updateTask", summary = "Update task by ID", description = "Updates a task by its ID.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated task details", content = @OpenApiContent(from = Task.class)), responses = {
-      @OpenApiResponse(status = "200", description = "Task updated successfully", content = @OpenApiContent(from = Task.class)),
+  @OpenApi(path = "/tasks/{id}", methods = HttpMethod.PUT, operationId = "updateTask", summary = "Update task by ID", description = "Updates a task by its ID and updates its Last-Modified timestamp in the cache.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated task details", content = @OpenApiContent(from = Task.class)), responses = {
+      @OpenApiResponse(status = "200", description = "Task updated successfully", content = @OpenApiContent(from = Task.class), headers = {
+          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
+      }),
+      @OpenApiResponse(status = "400", description = "Bad request"),
       @OpenApiResponse(status = "404", description = "Task not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
@@ -96,8 +146,8 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
-  @OpenApi(path = "/tasks/{id}", methods = HttpMethod.DELETE, operationId = "deleteTask", summary = "Delete task by ID", description = "Deletes a task by its ID.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Task deleted successfully"),
+  @OpenApi(path = "/tasks/{id}", methods = HttpMethod.DELETE, operationId = "deleteTask", summary = "Delete task by ID", description = "Deletes a task by its ID and removes its entry from the cache.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), responses = {
+      @OpenApiResponse(status = "204", description = "Task deleted successfully"),
       @OpenApiResponse(status = "404", description = "Task not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })

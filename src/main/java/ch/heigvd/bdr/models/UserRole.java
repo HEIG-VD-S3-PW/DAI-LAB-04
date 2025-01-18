@@ -7,6 +7,7 @@ public enum UserRole {
   DEVELOPER(3),
   SCRUM_MASTER(4),
   DATA_SPECIALIST(5);
+
   private final int value;
 
   UserRole(int value) {
