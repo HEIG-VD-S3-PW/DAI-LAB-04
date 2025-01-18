@@ -1,9 +1,15 @@
-
 <div align="center">
-  <img src="docs/img/frontend.png" alt="Front-end exemple">
-  <h1>OKR - A project management tool</h1>
+  <img src="docs/img/frontend.png" alt="Front-end example">
+
+  <h1>OKR - A Project Management Tool</h1>
   <p>An intuitive tool to help individuals, teams, and organizations set, track, and achieve their objectives and key results efficiently.</p>
 </div>
+
+---
+
+> **Important Note**  
+> This repository contains **only the backend API** for the project. The frontend is not included here.  
+> The image above is just an **example of the user interface** (frontend) that interacts with this backend API.
 
 
 <a name="readme-top"></a>
