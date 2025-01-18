@@ -10,6 +10,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UtilsController {
+    /**
+     * Get the If-Modified-Since header from the request
+     * @param ctx: context to use
+     * @return: content of the If-Modified-Since header
+     */
     public static LocalDateTime getLastModifiedHeader(Context ctx) {
         String ifModifiedSinceHeader = ctx.header("If-Modified-Since");
         LocalDateTime lastKnownModification = null;
@@ -29,6 +34,12 @@ public class UtilsController {
         return lastKnownModification;
     }
 
+    /**
+     * Check if two LocalDateTime are equals
+     * @param headerTime: Content of the If-Modified-Since header
+     * @param cacheTime: Content of the cache
+     * @return: true if both are equals
+     */
     public static boolean isModifiedSince(LocalDateTime headerTime, LocalDateTime cacheTime) {
         if (headerTime == null || cacheTime == null) {
             return false;
@@ -40,6 +51,12 @@ public class UtilsController {
         return truncatedHeaderTime.equals(truncatedCacheTime);
     }
 
+    /**
+     * Send the response to the client
+     * @param ctx: context to use
+     * @param cache: Cache to use
+     * @param key: Key of the value in the ConcurrentHashMap
+     */
     public static void sendResponse(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer key) {
         LocalDateTime now;
         if (cache.containsKey(key)) {
@@ -51,6 +68,12 @@ public class UtilsController {
         ctx.header("Last-Modified", now.toString());
     }
 
+    /**
+     * Check if some modifications have been done since the last known modification
+     * @param ctx: context to use
+     * @param cache: cache to check into
+     * @param id: key of the ConcurrentHashMap to use
+     */
     public static void checkModif(Context ctx, ConcurrentHashMap<Integer, LocalDateTime> cache, Integer id) {
         LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
 

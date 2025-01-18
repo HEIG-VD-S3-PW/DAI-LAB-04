@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Stores all the data related a project goal
+ */
 public class Goal {
   private int id;
   private String name;

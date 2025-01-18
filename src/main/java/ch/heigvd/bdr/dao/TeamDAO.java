@@ -10,6 +10,14 @@ import java.util.List;
 
 public class TeamDAO implements GenericDAO<Team, Integer> {
 
+  /**
+   * Insert a new team
+   * @param team: team to insert
+   * @return: inserted team
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Team create(Team team) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Team\" (name) VALUES (?) RETURNING id";
@@ -27,6 +35,14 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+  /**
+   * Find a team by its id
+   * @param id: id to use for research
+   * @return: found team
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Team findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"Team\" WHERE id = ?";
@@ -48,6 +64,13 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+  /**
+   * Find all the teams
+   * @return: List of all the teams
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public List<Team> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Team> teams = new ArrayList<>();
@@ -67,6 +90,14 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+  /**
+   * Update a specific team
+   * @param team: team to update with new values
+   * @return: updated team
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Team update(Team team) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Team\" SET name = ? WHERE id = ?";
@@ -79,6 +110,14 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+  /**
+   * Delete a specific team
+   * @param id: id of the task to delete
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Team\" WHERE id = ?";
@@ -89,33 +128,15 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
-  // Relationship methods
-  public List<User> getTeamMembers(int teamId) throws Exception {
-    List<User> members = new ArrayList<>();
-    String query = "SELECT u.* FROM \"User\" u " +
-        "JOIN \"User_Team\" ut ON u.id = ut.userId " +
-        "WHERE ut.teamId = ?";
-    try (Connection conn = DatabaseUtil.getConnection();
-        PreparedStatement pstmt = conn.prepareStatement(query)) {
-      pstmt.setInt(1, teamId);
 
-      try (ResultSet rs = pstmt.executeQuery()) {
-        while (rs.next()) {
-          User user = new User();
-          user.setId(rs.getInt("id"));
-          user.setFirstname(rs.getString("firstname"));
-          user.setLastname(rs.getString("lastname"));
-          user.setEmail(rs.getString("email"));
-          user.setRole(UserRole.valueOf(rs.getString("role")));
-          members.add(user);
-        }
-      }
-      return members;
-    }
-  }
-
-
-
+  /**
+   * Get the manager of a team
+   * @param teamId: team to use for research
+   * @return: Manager found
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public User getManager(int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM User u INNER JOIN Team t ON u.id = t.managerId WHERE t.id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -137,6 +158,15 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
+  /**
+   * Add a manager to a team
+   * @param userId: user to set as manager
+   * @param teamId: team to update
+   * @return: success of the update
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean addManager(int userId, int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Team\" SET managerId = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -149,7 +179,14 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
-
+  /**
+   * Remove a manager for a specific team
+   * @param teamId: team to edit
+   * @return: success of the update
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public boolean removeManager(int teamId) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Team\" SET managerId = NULL WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -161,8 +198,13 @@ public class TeamDAO implements GenericDAO<Team, Integer> {
     }
   }
 
-
-    public List<User> getMembers(int id) throws Exception {
+  /**
+   * Get all the members of a team
+   * @param id: id of the team to use for the research
+   * @return: List of the users
+   * @throws Exception
+   */
+    public List<User> getTeamMembers(int id) throws Exception {
         List<User> members = new ArrayList<>();
         String query = "SELECT u.* FROM \"User\" u " +
                 "JOIN \"User_Team\" ut ON u.id = ut.userId " +

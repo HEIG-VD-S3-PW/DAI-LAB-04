@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Stores all the data related to the collaborator needs of a task
+ */
 public class CollaboratorNeed {
   private UserRole type;
   private int quantity;

@@ -146,6 +146,14 @@ public final class Main /* implements Handler */ {
     app.start("0.0.0.0", port);
   }
 
+  /**
+   * Get the user's authorizations based on his id
+   * @param ctx: current context to get/send data
+   * @return: The user's role
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   private static AuthRole getUserRole(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     String userId = ctx.header("X-User-ID");
     if (userId == null || !StringHelper.isInteger(userId)) {
@@ -168,6 +176,10 @@ public final class Main /* implements Handler */ {
 
   }
 
+  /**
+   * Project's routes to interact with the backend
+   * @param app: current javalin app
+   */
   private static void routes(Javalin app) {
     // routes
     app.get("/", ctx -> {

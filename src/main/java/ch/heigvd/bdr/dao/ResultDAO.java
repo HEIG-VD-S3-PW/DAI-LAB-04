@@ -8,6 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ResultDAO implements GenericDAO<Result, Integer> {
+
+  /**
+   * Used to get all the data from a database
+   * @param rs: structure that stores all the data
+   * @return: The goal with the result data
+   * @throws SQLException
+   */
   public Result mapToResult(ResultSet rs) throws SQLException {
     Result result = new Result();
 
@@ -22,6 +29,14 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     return result;
   }
 
+  /**
+   * Create a new result
+   * @param result: result to use for insertion
+   * @return: inserted result
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Result create(Result result) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Result\" (title, createdAt, endsAt, note, tag, goalId) " +
@@ -48,6 +63,14 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Find a result by its id
+   * @param id: id to use for the research
+   * @return: found result
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public Result findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"Result\" WHERE id = ?";
 
@@ -69,6 +92,13 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Find all the results
+   * @return: list of all the results
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public List<Result> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = new ArrayList<>();
@@ -89,6 +119,14 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Update a result
+   * @param result
+   * @return: updated result
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Result update(Result result) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"Result\" SET title = ?, endsAt = ?, note = ?, tag = ?, goalId = ? " +
@@ -109,6 +147,14 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Delete a result
+   * @param id: id to use for deletion
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Result\" WHERE id = ?";
@@ -121,6 +167,14 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Find all the results related to a goal
+   * @param goalId: goal id to use
+   * @return: List of all the results
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<Result> findByGoalId(Integer goalId) throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = new ArrayList<>();
     String query = "SELECT * FROM \"Result\" WHERE goalId = ?";
@@ -139,6 +193,12 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Get all the tasks of a result
+   * @param resultId: result id to use
+   * @return: list of all the tasks
+   * @throws Exception
+   */
   public List<Task> getTasks(Integer resultId) throws Exception {
     List<Task> tasks = new ArrayList<>();
     String query = "SELECT * FROM \"Task\" WHERE resultId = ?";
@@ -159,6 +219,13 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Find all results created inside of a time interval
+   * @param startDate: Beginning of the interval
+   * @param endDate: End of the interval
+   * @return: List of all the results
+   * @throws Exception
+   */
   public List<Result> findByDateRange(Timestamp startDate, Timestamp endDate) throws Exception {
     List<Result> results = new ArrayList<>();
     String query = "SELECT * FROM \"Result\" WHERE createdAt BETWEEN ? AND ?";
@@ -178,6 +245,12 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Find all the results having a certain tag
+   * @param tag: tag to search for
+   * @return: List of all the results
+   * @throws Exception
+   */
   public List<Result> findByTag(String tag) throws Exception {
     List<Result> results = new ArrayList<>();
     String query = "SELECT * FROM \"Result\" WHERE tag = ?";
@@ -196,6 +269,14 @@ public class ResultDAO implements GenericDAO<Result, Integer> {
     }
   }
 
+  /**
+   * Find all the results related to a user id
+   * @param userId
+   * @return: List of all the users
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<Result> getResultsByUserID(int userId) throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = new ArrayList<>();
     String query = """

@@ -19,10 +19,18 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class TaskController implements ResourceControllerInterface {
+  // Manages cache for all tasks
   private final ConcurrentHashMap<Integer, LocalDateTime> taskCache = new ConcurrentHashMap<>();
   private final TaskDAO taskDAO = new TaskDAO();
   private final UserDAO userDAO = new UserDAO();
 
+  /**
+   * Show all tasks
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks", methods = HttpMethod.GET, operationId = "getAllTasks", summary = "Get all tasks for a given user", description = "Returns a list of all tasks.", tags = "Tasks", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
   }, responses = {
@@ -72,6 +80,13 @@ public class TaskController implements ResourceControllerInterface {
     ctx.json(tasks);
   }
 
+  /**
+   * Create a new task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks", methods = HttpMethod.POST, operationId = "createTask", summary = "Create a new task", description = "Creates a new task.", tags = "Tasks", requestBody = @OpenApiRequestBody(description = "Task details", content = @OpenApiContent(from = Task.class)), responses = {
       @OpenApiResponse(status = "201", description = "Task created successfully", content = @OpenApiContent(from = Task.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
@@ -91,6 +106,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Show a specific task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}", methods = HttpMethod.GET, operationId = "getTaskById", summary = "Get task by ID", description = """
       Fetches a task by its ID. Supports conditional retrieval using If-Modified-Since header.
       The timestamp comparison ignores nanoseconds for cache validation.
@@ -122,6 +144,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}", methods = HttpMethod.PUT, operationId = "updateTask", summary = "Update task by ID", description = "Updates a task by its ID and updates its Last-Modified timestamp in the cache.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated task details", content = @OpenApiContent(from = Task.class)), responses = {
       @OpenApiResponse(status = "200", description = "Task updated successfully", content = @OpenApiContent(from = Task.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
@@ -146,6 +175,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}", methods = HttpMethod.DELETE, operationId = "deleteTask", summary = "Delete task by ID", description = "Deletes a task by its ID and removes its entry from the cache.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "204", description = "Task deleted successfully"),
       @OpenApiResponse(status = "404", description = "Task not found"),
@@ -162,6 +198,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Get all subtasks of a given task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/substasks", methods = HttpMethod.GET, operationId = "getSubstasks", summary = "Get all subtasks of a given task by ID", description = "Fetches all substasks of a given a task by its ID.", tags = "Tasks", pathParams = @OpenApiParam(name = "id", description = "Task ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "Task found", content = @OpenApiContent(from = Task.class)),
       @OpenApiResponse(status = "404", description = "Task not found"),
@@ -178,6 +221,13 @@ public class TaskController implements ResourceControllerInterface {
     ctx.json(taskDAO.getSubtasks(task));
   }
 
+  /**
+   * Add a subtask to a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/subtasks", methods = HttpMethod.POST, operationId = "addSubtask", summary = "Add a subtask to a task", description = "Adds a subtask to a task and optionally sets the 'required' flag.", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The ID of the parent task", required = true, type = Integer.class)
   }, requestBody = @OpenApiRequestBody(description = "Subtask ID and optional required flag", content = @OpenApiContent(from = HashMap.class)), responses = {
@@ -224,6 +274,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a subtask
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/subtasks/{subtaskId}/", methods = HttpMethod.PATCH, operationId = "patchSubtaskRequired", summary = "Update the 'required' property of a subtask relationship", description = "Updates the 'required' property of the relationship between a task and a subtask.", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The ID of the parent task", required = true, type = Integer.class),
       @OpenApiParam(name = "subtaskId", description = "The ID of the subtask", required = true, type = Integer.class)
@@ -266,6 +323,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Remove a subtask of a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/subtasks/{subtaskId}", methods = HttpMethod.DELETE, operationId = "deleteSubtask", summary = "Delete a subtask from a specific task", description = "Deletes the relationship between a specific task and its subtask by their respective IDs. This operation removes the subtask from the parent task.", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task to which the subtask belongs.", required = true, type = Integer.class),
       @OpenApiParam(name = "subtaskId", description = "The unique identifier of the subtask to be deleted from the task.", required = true, type = Integer.class)
@@ -298,6 +362,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Add material needs to a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.POST, operationId = "addMaterialNeeds", summary = "Add a material need to a task", description = "Add the material resources that a task needs to be successfully completed", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -326,6 +397,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Add collaborator needs to a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds", methods = HttpMethod.POST, operationId = "addCollaboratorNeeds", summary = "Add a collaborator need to a task", description = "Add the collaborator resources that a task needs to be successfully completed", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -354,6 +432,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update the material needs of a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/materialNeeds/{type}", methods = HttpMethod.PATCH, operationId = "updateMaterialNeed", summary = "Update the quantity of a material need for a task", description = "Update the quantity of a material need for a task given by its id, only for the \"Material\" type", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -382,6 +467,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update the collaborator needs of a task
+   * @param ctx
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds/{type}", methods = HttpMethod.PATCH, operationId = "updateCollaboratorNeed", summary = "Update the quantity of a collaborator need for a task", description = "Update the quantity of a collaborator need for a task given by its id, only for the \"UserRole\" type", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -410,6 +502,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Get all the material needs of a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/materialNeeds", methods = HttpMethod.GET, operationId = "getMaterialNeeds", summary = "Get the material need of a task", description = "Get all the material needs from a task given by its id", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -436,6 +535,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Get all the collaborator needs of a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds", methods = HttpMethod.GET, operationId = "getCollaboratorNeeds", summary = "Get the collaborator need of a task", description = "Get all the collaborator needs from a task given by its id", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -462,6 +568,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a specific material need for a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/materialNeeds/{type}/", methods = HttpMethod.DELETE, operationId = "deleteMaterialNeed", summary = "Delete a material need for a task", description = "Delete all the material needs from a task given by its id, only for the \"Material\" type", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 
@@ -490,6 +603,13 @@ public class TaskController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a specific collaborator need for a task
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/tasks/{id}/collaboratorNeeds/{type}", methods = HttpMethod.DELETE, operationId = "deleteCollaboratorNeed", summary = "Delete a collaborator need for a task", description = "Delete all the collaborator needs from a task given by its id, only for the \"UserRole\" type", tags = "Tasks", pathParams = {
       @OpenApiParam(name = "id", description = "The unique identifier of the task", required = true, type = Integer.class),
 

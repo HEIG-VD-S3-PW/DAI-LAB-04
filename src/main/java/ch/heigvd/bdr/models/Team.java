@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Store all the data related to a team
+ */
 public class Team {
   private int id;
   private String name;

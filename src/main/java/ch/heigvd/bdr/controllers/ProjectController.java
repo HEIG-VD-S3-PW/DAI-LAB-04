@@ -17,13 +17,21 @@ import ch.heigvd.bdr.models.Project;
 import ch.heigvd.bdr.models.Team;
 
 public class ProjectController implements ResourceControllerInterface {
-  private final ProjectDAO projectDAO;
+  // Manages the cache for all the projects
   private final ConcurrentHashMap<Integer, LocalDateTime> projectCache = new ConcurrentHashMap<>();
+  private final ProjectDAO projectDAO;
 
   public ProjectController() {
     this.projectDAO = new ProjectDAO();
   }
 
+  /**
+   * Show all projects
+   * @param ctx: context to use
+   * @throws SQLException
+   * @throws ClassNotFoundException
+   * @throws IOException
+   */
   @OpenApi(path = "/projects", methods = HttpMethod.GET, operationId = "getAllProjects", summary = "Get all projects", description = "Returns a list of all projects.", tags = "Projects", headers = {
       @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
   }, responses = {
@@ -32,7 +40,6 @@ public class ProjectController implements ResourceControllerInterface {
       @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
-  // Retrieve all projects
   @Override
   public void all(Context ctx) throws SQLException, ClassNotFoundException, IOException {
     LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
@@ -52,12 +59,18 @@ public class ProjectController implements ResourceControllerInterface {
     ctx.json(projects);
   }
 
+  /**
+   * Create a project
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws IOException
+   * @throws SQLException
+   */
   @OpenApi(path = "/projects", methods = HttpMethod.POST, operationId = "createProject", summary = "Create a new project", description = "Creates a new project in the system.", tags = "Projects", requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = Project.class)), responses = {
       @OpenApiResponse(status = "201", description = "Project created successfully", content = @OpenApiContent(from = Project.class)),
       @OpenApiResponse(status = "400", description = "Bad Request"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
-  // Create a new project
   @Override
   public void create(Context ctx) throws ClassNotFoundException, IOException, SQLException {
     Project project = ctx.bodyAsClass(Project.class);
@@ -69,12 +82,18 @@ public class ProjectController implements ResourceControllerInterface {
     ctx.status(201).json(createdProject);
   }
 
+  /**
+   * Show a specific project
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/projects/{id}", methods = HttpMethod.GET, operationId = "getProjectById", summary = "Get project by ID", description = "Fetches a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "Project ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "Project found", content = @OpenApiContent(from = Project.class)),
       @OpenApiResponse(status = "404", description = "Project not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
-  // Retrieve a single project by ID
   @Override
   public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
@@ -90,13 +109,19 @@ public class ProjectController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a project
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/projects/{id}", methods = HttpMethod.PUT, operationId = "updateProject", summary = "Update project by ID", description = "Updates project information by ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "Project ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated user details", content = @OpenApiContent(from = Project.class)), responses = {
       @OpenApiResponse(status = "200", description = "Project updated successfully", content = @OpenApiContent(from = Project.class)),
       @OpenApiResponse(status = "400", description = "Bad Request"),
       @OpenApiResponse(status = "404", description = "Project not found"),
       @OpenApiResponse(status = "500", description = "Internal Server Error")
   })
-  // Update a project
   @Override
   public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
     int id = Integer.parseInt(ctx.pathParam("id"));
@@ -113,6 +138,13 @@ public class ProjectController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a project
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/projects/{id}", methods = HttpMethod.DELETE, operationId = "deleteProject", summary = "Delete project by ID", description = "Deletes a project by it's ID.", tags = "Projects", pathParams = @OpenApiParam(name = "id", description = "Project ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "Project deleted successfully"),
       @OpenApiResponse(status = "404", description = "Project not found"),

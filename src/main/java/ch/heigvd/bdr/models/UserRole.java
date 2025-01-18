@@ -1,5 +1,8 @@
 package ch.heigvd.bdr.models;
 
+/**
+ * Used to manage the user's roles on the platform
+ */
 public enum UserRole {
   ADMIN(0),
   MANAGER(1),

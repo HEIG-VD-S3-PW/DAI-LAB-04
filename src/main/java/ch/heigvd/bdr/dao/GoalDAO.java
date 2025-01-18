@@ -18,6 +18,12 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
       "INNER JOIN \"Team\" t ON g.teamId = t.id " +
       "INNER JOIN \"Project\" p ON g.projectId = p.id";
 
+  /**
+   * Used to get all the data from a database
+   * @param rs: structure that stores all the data
+   * @return: The goal with the result data
+   * @throws SQLException
+   */
   private Goal mapGoal(ResultSet rs) throws SQLException {
     Goal goal = new Goal();
     goal.setId(rs.getInt("goal_id"));
@@ -41,6 +47,14 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     return goal;
   }
 
+  /**
+   * Used to insert a new goal
+   * @param goal: goal to insert
+   * @return inserted goal
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Goal create(Goal goal) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"Goal\" (name, description, note, tag, projectId, teamId) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
@@ -63,6 +77,14 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     }
   }
 
+  /**
+   * Find a goal by its id
+   * @param id: id to search for
+   * @return: goal found
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Goal findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = GOAL_QUERY + " WHERE g.id = ?";
@@ -79,6 +101,13 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     return null;
   }
 
+  /**
+   * Get all goals
+   * @return: list of all the goals
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public List<Goal> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<Goal> goals = new ArrayList<>();
@@ -93,6 +122,14 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     }
   }
 
+  /**
+   * Update a goal
+   * @param goal: goal to use for update
+   * @return: updated goal
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public Goal update(Goal goal) throws ClassNotFoundException, SQLException, IOException {
     System.out.println(goal.getTeamId());
@@ -111,6 +148,14 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     }
   }
 
+  /**
+   * Delete a goal
+   * @param id: id of the goal to delete
+   * @return success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"Goal\" WHERE id = ?";
@@ -121,6 +166,14 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     }
   }
 
+  /**
+   * Find goals related to an user's id
+   * @param userId: user id to use for the research
+   * @return
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public List<Goal> getGoalsByUserID(int userId) throws ClassNotFoundException, SQLException, IOException {
     List<Goal> goals = new ArrayList<>();
     String query = """
@@ -152,6 +205,14 @@ public class GoalDAO implements GenericDAO<Goal, Integer> {
     }
   }
 
+  /**
+   * Get the results related to a goal
+   * @param goalId: goal to use for the research
+   * @return
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   // Relationship methods
   public List<Result> getGoalResults(int goalId) throws ClassNotFoundException, SQLException, IOException {
     List<Result> results = new ArrayList<>();

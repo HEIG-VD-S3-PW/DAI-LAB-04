@@ -9,6 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProjectDAO implements GenericDAO<Project, Integer> {
+
+  /**
+   * Used to get all the data from a database
+   * @param rs: structure that stores all the data
+   * @return: The goal with the result data
+   * @throws SQLException
+   */
   public Project mapToProject(ResultSet rs) throws ClassNotFoundException, SQLException, IOException {
     Project project = new Project();
     project.setId(rs.getInt("id"));
@@ -17,6 +24,14 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     return project;
   }
 
+  /**
+   * Create a new project
+   * @param project: project to insert
+   * @return: new project
+   * @throws SQLException
+   * @throws ClassNotFoundException
+   * @throws IOException
+   */
   @Override
   public Project create(Project project) throws SQLException, ClassNotFoundException, IOException {
     String query = "INSERT INTO \"Project\" (name) VALUES (?) RETURNING id";
@@ -34,6 +49,14 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     }
   }
 
+  /**
+   * Find a project using the id
+   * @param id: id to search for
+   * @return: found project
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   @Override
   public Project findById(Integer id) throws SQLException, IOException, ClassNotFoundException {
     String query = "SELECT * FROM \"Project\" WHERE id = ?";
@@ -51,6 +74,13 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     }
   }
 
+  /**
+   * Find all projects
+   * @return: list of all the projects
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   @Override
   public List<Project> findAll() throws SQLException, IOException, ClassNotFoundException {
     List<Project> projects = new ArrayList<>();
@@ -67,6 +97,14 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     }
   }
 
+  /**
+   * Update a project
+   * @param project: project to use for update
+   * @return: updated project
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   @Override
   public Project update(Project project) throws SQLException, IOException, ClassNotFoundException {
     String query = "UPDATE \"Project\" SET name = ? WHERE id = ?";
@@ -79,6 +117,14 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     }
   }
 
+  /**
+   * Delete a project
+   * @param id: id of the project to delete
+   * @return: success of the deletion
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   @Override
   public boolean delete(Integer id) throws SQLException, IOException, ClassNotFoundException {
     String query = "DELETE FROM \"Project\" WHERE id = ?";
@@ -89,7 +135,14 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     }
   }
 
-  // Relationship methods
+  /**
+   * Get all the goals related to a project
+   * @param projectId: project id to use
+   * @return: list of all the goals
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   public List<Goal> getProjectGoals(int projectId) throws SQLException, IOException, ClassNotFoundException {
     List<Goal> goals = new ArrayList<>();
     String query = "SELECT * FROM \"Goal\" WHERE projectId = ?";

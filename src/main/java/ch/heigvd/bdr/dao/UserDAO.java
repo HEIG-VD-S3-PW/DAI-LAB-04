@@ -9,6 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAO implements GenericDAO<User, Integer> {
+
+  /**
+   * Create a new user
+   * @param user: user to insert
+   * @return: inserted user
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public User create(User user) throws ClassNotFoundException, SQLException, IOException {
     String query = "INSERT INTO \"User\" (firstname, lastname, email, role) VALUES (?, ?, ?, ?::\"UserRole\") RETURNING id";
@@ -29,6 +38,14 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  /**
+   * Find a user by its id
+   * @param id: id of the user to use for research
+   * @return: found users
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public User findById(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"User\" WHERE id = ?";
@@ -51,6 +68,14 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  /**
+   * Find a user with its email
+   * @param email: email to use for the research
+   * @return: found user
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   public User findByEmail(String email) throws ClassNotFoundException, SQLException, IOException {
     String query = "SELECT * FROM \"User\" WHERE email = ?";
     try (Connection conn = DatabaseUtil.getConnection();
@@ -72,6 +97,13 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  /**
+   * Find all the users
+   * @return: List of the users
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public List<User> findAll() throws ClassNotFoundException, SQLException, IOException {
     List<User> users = new ArrayList<>();
@@ -93,6 +125,14 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  /**
+   * Update a user
+   * @param user: user to update with new values
+   * @return: updated user
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public User update(User user) throws ClassNotFoundException, SQLException, IOException {
     String query = "UPDATE \"User\" SET firstname = ?, lastname = ?, email = ?, role = ?::\"UserRole\" WHERE id = ?";
@@ -108,6 +148,14 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  /**
+   * Delete a user
+   * @param id: id of the user to delete
+   * @return: success of the deletion
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @Override
   public boolean delete(Integer id) throws ClassNotFoundException, SQLException, IOException {
     String query = "DELETE FROM \"User\" WHERE id = ?";
@@ -118,6 +166,14 @@ public class UserDAO implements GenericDAO<User, Integer> {
     }
   }
 
+  /**
+   * Insert the user into a team
+   * @param userId: user to insert
+   * @param teamId: team to use
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
     public void joinTeam(int userId, int teamId) throws SQLException, IOException, ClassNotFoundException {
         String query = "INSERT INTO \"User_Team\" (userId, teamId) VALUES (?, ?)";
         try (Connection conn = DatabaseUtil.getConnection();
@@ -128,6 +184,14 @@ public class UserDAO implements GenericDAO<User, Integer> {
         }
     }
 
+  /**
+   * Remove a user from a team
+   * @param userId: user to remove
+   * @param teamId: team to use
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
     public void leaveTeam(int userId, int teamId) throws SQLException, IOException, ClassNotFoundException {
         String query = "DELETE FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
         try (Connection conn = DatabaseUtil.getConnection();
@@ -138,6 +202,15 @@ public class UserDAO implements GenericDAO<User, Integer> {
         }
     }
 
+  /**
+   * Check if an user belongs to a specific team
+   * @param userId: user to search
+   * @param teamId: team to use
+   * @return: true if the user is a member of the team
+   * @throws SQLException
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
     public boolean belongsToTeam(int userId, int teamId) throws SQLException, IOException, ClassNotFoundException {
         String query = "SELECT 1 FROM \"User_Team\" WHERE userId = ? AND teamId = ?";
         try (Connection conn = DatabaseUtil.getConnection();

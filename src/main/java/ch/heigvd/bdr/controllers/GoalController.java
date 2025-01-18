@@ -22,11 +22,19 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class GoalController implements ResourceControllerInterface {
+  // Manages the cache for all goals
   private final ConcurrentHashMap<Integer, LocalDateTime> goalCache = new ConcurrentHashMap<>();
   private final GoalDAO goalDAO = new GoalDAO();
   private final UserDAO userDAO = new UserDAO();
 
-  @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals for a given user", description = "Returns a list of all goals. Supports RFC 1123 formatted If-Modified-Since header for cache validation.", tags = "Goals", headers = {
+  /**
+   * Get all the goals
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
+    @OpenApi(path = "/goals", methods = HttpMethod.GET, operationId = "getAllGoals", summary = "Get all goals for a given user", description = "Returns a list of all goals. Supports RFC 1123 formatted If-Modified-Since header for cache validation.", tags = "Goals", headers = {
       @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
       @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
   }, responses = {
@@ -75,6 +83,13 @@ public class GoalController implements ResourceControllerInterface {
     ctx.json(goals);
   }
 
+  /**
+   * Create a goal
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/goals", methods = HttpMethod.POST, operationId = "createGoal", summary = "Create a new goal", description = "Creates a new goal and sets its Last-Modified timestamp in the cache.", tags = "Goals", requestBody = @OpenApiRequestBody(description = "Goal details", content = @OpenApiContent(from = Goal.class)), responses = {
       @OpenApiResponse(status = "201", description = "Goal created successfully", content = @OpenApiContent(from = Goal.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
@@ -90,6 +105,13 @@ public class GoalController implements ResourceControllerInterface {
     ctx.status(201).json(goalDAO.create(goal));
   }
 
+  /**
+   * Show a specific goal
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/goals/{id}", methods = HttpMethod.GET, operationId = "getGoalById", summary = "Get goal by ID", description = """
       Fetches a goal by its ID. Supports conditional retrieval using If-Modified-Since header.
       The timestamp comparison ignores nanoseconds for cache validation.
@@ -121,6 +143,13 @@ public class GoalController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a goal
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/goals/{id}", methods = HttpMethod.PUT, operationId = "updateGoal", summary = "Update goal by ID", description = "Updates a goal by its ID and updates its Last-Modified timestamp in the cache.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated goal details", content = @OpenApiContent(from = Goal.class)), responses = {
       @OpenApiResponse(status = "200", description = "Goal updated successfully", content = @OpenApiContent(from = Goal.class), headers = {
           @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
@@ -144,6 +173,13 @@ public class GoalController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a goal
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/goals/{id}", methods = HttpMethod.DELETE, operationId = "deleteGoal", summary = "Delete goal by ID", description = "Deletes a goal by its ID and removes its entry from the cache.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "204", description = "Goal deleted successfully"),
       @OpenApiResponse(status = "404", description = "Goal not found"),

@@ -5,6 +5,11 @@ import io.javalin.http.Context;
 import org.postgresql.util.PSQLException;
 
 public class DatabaseExceptionHandler {
+  /**
+   * Translate postgreSQL expections into http methods
+   * @param e: exception from postgreSQL
+   * @param ctx: context to use
+   */
   public static void handlePostgreSQLException(PSQLException e, Context ctx) {
     String state = e.getSQLState();
     switch (state) {
@@ -22,6 +27,11 @@ public class DatabaseExceptionHandler {
     }
   }
 
+  /**
+   * For all server internal errors
+   * @param e: exception thrown
+   * @param ctx: context to use
+   */
   public static void handleGenericException(Exception e, Context ctx) {
     ctx.status(500).json("Internal Server Error: " + e.getMessage());
   }

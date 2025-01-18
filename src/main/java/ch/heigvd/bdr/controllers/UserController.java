@@ -20,9 +20,17 @@ import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 
 public class UserController implements ResourceControllerInterface {
+  // Used to manage the cache for all users
   private final ConcurrentHashMap<Integer, LocalDateTime> userCache = new ConcurrentHashMap<>();
   private final UserDAO userDAO = new UserDAO();
 
+  /**
+   * Show all users
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/users", methods = HttpMethod.GET, operationId = "getAllUsers", summary = "Get all users", description = "Returns a list of all users.", tags = "Users", headers = {
       @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
   }, responses = {
@@ -52,6 +60,13 @@ public class UserController implements ResourceControllerInterface {
     ctx.json(users);
   }
 
+  /**
+   * Create a user
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/users", methods = HttpMethod.POST, operationId = "createUser", summary = "Create a new user", description = "Creates a new user in the system.", tags = "Users", requestBody = @OpenApiRequestBody(description = "User details", content = @OpenApiContent(from = User.class)), responses = {
       @OpenApiResponse(status = "201", description = "User created successfully", content = @OpenApiContent(from = User.class)),
       @OpenApiResponse(status = "400", description = "Bad Request"),
@@ -65,6 +80,13 @@ public class UserController implements ResourceControllerInterface {
     ctx.status(201).json(userDAO.create(user));
   }
 
+  /**
+   * Show a specific user
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/users/{id}", methods = HttpMethod.GET, operationId = "getUserById", summary = "Get user by ID", description = "Fetches a user by their ID.", tags = "Users", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "User found", content = @OpenApiContent(from = User.class)),
       @OpenApiResponse(status = "404", description = "User not found"),
@@ -86,6 +108,13 @@ public class UserController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Update a user
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/users/{id}", methods = HttpMethod.PUT, operationId = "updateUser", summary = "Update user by ID", description = "Updates user information by ID.", tags = "Users", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated user details", content = @OpenApiContent(from = User.class)), responses = {
       @OpenApiResponse(status = "200", description = "User updated successfully", content = @OpenApiContent(from = User.class)),
       @OpenApiResponse(status = "400", description = "Bad Request"),
@@ -107,6 +136,13 @@ public class UserController implements ResourceControllerInterface {
     }
   }
 
+  /**
+   * Delete a user
+   * @param ctx: context to use
+   * @throws ClassNotFoundException
+   * @throws SQLException
+   * @throws IOException
+   */
   @OpenApi(path = "/users/{id}", methods = HttpMethod.DELETE, operationId = "deleteUser", summary = "Delete user by ID", description = "Deletes a user by their ID.", tags = "Users", pathParams = @OpenApiParam(name = "id", description = "User ID", required = true, type = UUID.class), responses = {
       @OpenApiResponse(status = "200", description = "User deleted successfully"),
       @OpenApiResponse(status = "404", description = "User not found"),
