@@ -459,6 +459,12 @@ Currently, the maxTtl has been set to 600 seconds but be carefull, the time afte
 
 We also specified a memory.limit of 3Gi for the cache. Feel free to change the configuration according to your proxy's specified memory limit.
 
+##### Traefik's dashboard
+
+Traefik's dashboard can be accessed through the following url: <https://dashboard-heig-dai-pw04.duckdns.org/>
+
+![Traefik's dashboard](./docs/img/dashboard.png)
+
 ## Examples
 
 ### Create
