@@ -1,29 +1,38 @@
-# ORK - A project management tool
-
 <a name="readme-top"></a>
+
+<div align="center">
+  <img src="docs/img/frontend.png" alt="Front-end example">
+
+  <h1>OKR - An Objective and Key Results Manager API</h1>
+  <p>An intuitive API to help individuals, teams, and organizations set, track, and achieve their objectives and key results efficiently.</p>
+</div>
+
+---
+
+> **Important Note**  
+> This repository contains **only the backend API** for the project. The frontend is not included here.  
+> The image above is just an **example of the user interface** (frontend) that interacts with this backend API.
+
 
 <details>
   <summary>Table of Contents</summary>
-  <ol>
-    <li>
-        <a href="#built-with">Built With</a>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
+  <ul>
+    <li><a href="#built-with">Built With</a></li>
+    <li><a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#get-the-source-code">Get the source code</a></li>
         <li><a href="#documentation">Documentation</a></li>
         <li><a href="#requirements">Requirements</a></li>
         <li><a href="#setup-web-infrastructure">Setup web infrastructure</a></li>
-        <li><a href="#development">Development<a></li>
-        <li><a href="#usage">Usage<a></li>
-        <li><a href="#examples">Examples<a></li>
+        <li><a href="#development">Development</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#examples">Examples</a></li>
       </ul>
     </li>
-    <li><a href="#contributing">Contributions</a></li>
+    <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contacts">Contacts</a></li>
-  </ol>
+  </ul>
 </details>
 
 ## Built With

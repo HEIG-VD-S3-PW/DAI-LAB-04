@@ -16,7 +16,7 @@ DROP FUNCTION IF EXISTS check_dependencies_on_task_done;
 DROP TRIGGER IF EXISTS task_deletion ON "Task";
 DROP FUNCTION IF EXISTS check_task_deletion;
 
-DROP TRIGGER IF EXISTS check_task_dependencies ON "Task_Subtask"
+DROP TRIGGER IF EXISTS check_task_dependencies ON "Task_Subtask";
 DROP FUNCTION IF EXISTS task_dependencies;
 
 DROP TABLE IF EXISTS "Result";
@@ -58,6 +58,7 @@ INSERT INTO "MaterialNeed" ("type") VALUES
 CREATE TABLE "Project"(
 	id SERIAL,
 	name VARCHAR(100) NOT NULL,
+    description TEXT,
 	CONSTRAINT PK_Project PRIMARY KEY(id),
 	CONSTRAINT UC_Project_name UNIQUE(name)
 );
