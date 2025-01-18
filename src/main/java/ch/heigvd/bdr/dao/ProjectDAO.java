@@ -20,6 +20,7 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
     Project project = new Project();
     project.setId(rs.getInt("id"));
     project.setName(rs.getString("name"));
+    project.setDescription(rs.getString("description"));
 
     return project;
   }
@@ -34,10 +35,11 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
    */
   @Override
   public Project create(Project project) throws SQLException, ClassNotFoundException, IOException {
-    String query = "INSERT INTO \"Project\" (name) VALUES (?) RETURNING id";
+    String query = "INSERT INTO \"Project\" (name, description) VALUES (?, ?) RETURNING id";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
       pstmt.setString(1, project.getName());
+      pstmt.setString(2, project.getDescription());
       pstmt.executeUpdate();
 
       try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -107,11 +109,12 @@ public class ProjectDAO implements GenericDAO<Project, Integer> {
    */
   @Override
   public Project update(Project project) throws SQLException, IOException, ClassNotFoundException {
-    String query = "UPDATE \"Project\" SET name = ? WHERE id = ?";
+    String query = "UPDATE \"Project\" SET name = ?, description = ? WHERE id = ?";
     try (Connection conn = DatabaseUtil.getConnection();
         PreparedStatement pstmt = conn.prepareStatement(query)) {
       pstmt.setString(1, project.getName());
-      pstmt.setInt(2, project.getId());
+      pstmt.setString(2, project.getDescription());
+      pstmt.setInt(3, project.getId());
       pstmt.executeUpdate();
       return project;
     }
