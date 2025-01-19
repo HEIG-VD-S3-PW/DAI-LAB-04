@@ -17,321 +17,331 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TeamController implements ResourceControllerInterface {
-  // Used to manage the cache for all teams
-  private final ConcurrentHashMap<Integer, LocalDateTime> teamCache = new ConcurrentHashMap<>();
-  private final TeamDAO teamDAO = new TeamDAO();
-  private final UserDAO userDAO = new UserDAO();
+    // Used to manage the cache for all teams
+    private final ConcurrentHashMap<Integer, LocalDateTime> teamCache = new ConcurrentHashMap<>();
+    private final TeamDAO teamDAO = new TeamDAO();
+    private final UserDAO userDAO = new UserDAO();
 
-  /**
-   * Show all teams
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", headers = {
-      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
-  }, responses = {
-      @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team[].class)),
-      @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
-      @OpenApiResponse(status = "400", description = "Bad request"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  @Override
-  public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
-    LocalDateTime latestModification = teamCache.values().stream().max(LocalDateTime::compareTo).orElse(null);
+    /**
+     * Show all teams
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams", methods = HttpMethod.GET, operationId = "getAllTeams", summary = "Get all teams", description = "Returns a list of all teams.", tags = "Teams", headers = {
+            @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp for conditional request")
+    }, responses = {
+            @OpenApiResponse(status = "200", description = "List of all teams", content = @OpenApiContent(from = Team[].class)),
+            @OpenApiResponse(status = "304", description = "Resource not modified since If-Modified-Since timestamp"),
+            @OpenApiResponse(status = "400", description = "Bad request"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    @Override
+    public void all(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        LocalDateTime lastKnownModification = UtilsController.getLastModifiedHeader(ctx);
+        LocalDateTime latestModification = teamCache.values().stream().max(LocalDateTime::compareTo).orElse(null);
 
-    if (lastKnownModification != null && latestModification != null
-        && !UtilsController.isModifiedSince(latestModification, lastKnownModification)) {
-      throw new NotModifiedResponse();
+        if (lastKnownModification != null && latestModification != null
+                && !UtilsController.isModifiedSince(latestModification, lastKnownModification)) {
+            throw new NotModifiedResponse();
+        }
+
+        List<Team> teams = teamDAO.findAll();
+        LocalDateTime now = LocalDateTime.now();
+        for (Team t : teams) {
+            teamCache.put(t.getId(), now);
+        }
+        ctx.header("Last-Modified", now.toString());
+        ctx.json(teams);
     }
 
-    List<Team> teams = teamDAO.findAll();
-    LocalDateTime now = LocalDateTime.now();
-    for (Team t : teams) {
-      teamCache.put(t.getId(), now);
-    }
-    ctx.header("Last-Modified", now.toString());
-    ctx.json(teams);
-  }
-
-  /**
-   * Create a new team
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
-      @OpenApiResponse(status = "201", description = "Team created successfully", content = @OpenApiContent(from = Team.class), headers = {
-          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
-      }),
-      @OpenApiResponse(status = "400", description = "Bad Request"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  @Override
-  public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    Team team = ctx.bodyAsClass(Team.class);
-    teamCache.put(team.getId(), LocalDateTime.now());
-    ctx.header("Last-Modified", LocalDateTime.now().toString());
-    ctx.status(201).json(teamDAO.create(team));
-  }
-
-  /**
-   * Show a specific team
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}", methods = HttpMethod.GET, operationId = "getTeamById", summary = "Get team by ID", description = """
-      Fetches a team by its ID. Supports conditional retrieval using If-Modified-Since header.
-      The timestamp comparison ignores nanoseconds for cache validation.
-      Returns 304 Not Modified if the resource hasn't changed since the specified timestamp.
-      """, tags = "Teams", headers = {
-      @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp. Returns 304 if resource unchanged since this time.")
-  }, pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Team found", content = @OpenApiContent(from = Team.class), headers = {
-          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted timestamp of last modification")
-      }),
-      @OpenApiResponse(status = "304", description = "Team not modified since If-Modified-Since timestamp"),
-      @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  @Override
-  public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int id = Integer.parseInt(ctx.pathParam("id"));
-
-    UtilsController.checkModif(ctx, teamCache, id);
-
-    Team team = teamDAO.findById(id);
-
-    if (team != null) {
-      UtilsController.sendResponse(ctx, teamCache, team.getId());
-      ctx.json(team);
-    } else {
-      throw new NotFoundResponse();
-    }
-  }
-
-  /**
-   * Update a team
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}", methods = HttpMethod.PUT, operationId = "updateTeam", summary = "Update team by ID", description = "Updates a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated team details", content = @OpenApiContent(from = Team.class)), responses = {
-      @OpenApiResponse(status = "200", description = "Team updated successfully", content = @OpenApiContent(from = Team.class), headers = {
-          @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
-      }),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  @Override
-  public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int id = Integer.parseInt(ctx.pathParam("id"));
-    Team team = ctx.bodyAsClass(Team.class);
-    team.setId(id);
-    Team updatedTeam = teamDAO.update(team);
-    if (updatedTeam != null) {
-      teamCache.put(id, LocalDateTime.now());
-      ctx.header("Last-Modified", LocalDateTime.now().toString());
-      ctx.json(updatedTeam);
-    } else {
-      ctx.status(404).json(Map.of("message", "Team not found"));
-    }
-  }
-
-  /**
-   * Delete a team
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}", methods = HttpMethod.DELETE, operationId = "deleteTeam", summary = "Delete team by ID", description = "Deletes a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
-      @OpenApiResponse(status = "200", description = "Team deleted successfully"),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  @Override
-  public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int id = Integer.parseInt(ctx.pathParam("id"));
-    if (teamDAO.delete(id)) {
-      teamCache.remove(id);
-      ctx.status(204);
-    } else {
-      ctx.status(404).json(Map.of("message", "Team not found"));
-    }
-  }
-
-  /**
-   * Join a team (for a user)
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}/join", methods = HttpMethod.POST, operationId = "joinTeam", summary = "Join a team", description = "Allows a user to join a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), headers = {
-      @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
-  }, responses = {
-      @OpenApiResponse(status = "200", description = "User joined the team successfully"),
-      @OpenApiResponse(status = "400", description = "User is already a member of the team"),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-
-    String header = ctx.header("X-User-ID");
-    int teamId = Integer.parseInt(ctx.pathParam("id"));
-    int userId = Integer.parseInt(header);
-    if (header == null || !StringHelper.isInteger(header)) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+    /**
+     * Create a new team
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams", methods = HttpMethod.POST, operationId = "createTeam", summary = "Create a new team", description = "Creates a new team.", tags = "Teams", requestBody = @OpenApiRequestBody(description = "Team details", content = @OpenApiContent(from = Team.class)), responses = {
+            @OpenApiResponse(status = "201", description = "Team created successfully", content = @OpenApiContent(from = Team.class), headers = {
+                    @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
+            }),
+            @OpenApiResponse(status = "400", description = "Bad Request"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    @Override
+    public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        Team team = ctx.bodyAsClass(Team.class);
+        teamCache.put(team.getId(), LocalDateTime.now());
+        ctx.header("Last-Modified", LocalDateTime.now().toString());
+        ctx.status(201).json(teamDAO.create(team));
     }
 
-    // Vérifier si l'utilisateur est déjà membre de l'équipe
-    if (userDAO.belongsToTeam(userId, teamId)) {
-      ctx.status(400).json(Map.of("message", "User is already a member of the team"));
-      return;
+    /**
+     * Show a specific team
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}", methods = HttpMethod.GET, operationId = "getTeamById", summary = "Get team by ID", description = """
+            Fetches a team by its ID. Supports conditional retrieval using If-Modified-Since header.
+            The timestamp comparison ignores nanoseconds for cache validation.
+            Returns 304 Not Modified if the resource hasn't changed since the specified timestamp.
+            """, tags = "Teams", headers = {
+            @OpenApiParam(name = "If-Modified-Since", required = false, description = "RFC 1123 formatted timestamp. Returns 304 if resource unchanged since this time.")
+    }, pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
+            @OpenApiResponse(status = "200", description = "Team found", content = @OpenApiContent(from = Team.class), headers = {
+                    @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted timestamp of last modification")
+            }),
+            @OpenApiResponse(status = "304", description = "Team not modified since If-Modified-Since timestamp"),
+            @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    @Override
+    public void show(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+
+        UtilsController.checkModif(ctx, teamCache, id);
+
+        Team team = teamDAO.findById(id);
+
+        if (team != null) {
+            UtilsController.sendResponse(ctx, teamCache, team.getId());
+            ctx.json(team);
+        } else {
+            throw new NotFoundResponse();
+        }
     }
 
-    userDAO.joinTeam(userId, teamId);
-
-    ctx.status(200).json(Map.of("message", "User joined the team successfully"));
-  }
-
-  /**
-   * Leave a team
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}/leave", methods = HttpMethod.POST, operationId = "leaveTeam", summary = "Leave a team", description = "Allows a user to leave a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-      @OpenApiResponse(status = "200", description = "User left the team successfully"),
-      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void leave(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int teamId = Integer.parseInt(ctx.pathParam("id"));
-    String userId = ctx.header("X-User-ID");
-    if (userId == null || !StringHelper.isInteger(userId)) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+    /**
+     * Update a team
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}", methods = HttpMethod.PUT, operationId = "updateTeam", summary = "Update team by ID", description = "Updates a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), requestBody = @OpenApiRequestBody(description = "Updated team details", content = @OpenApiContent(from = Team.class)), responses = {
+            @OpenApiResponse(status = "200", description = "Team updated successfully", content = @OpenApiContent(from = Team.class), headers = {
+                    @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
+            }),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    @Override
+    public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        Team team = ctx.bodyAsClass(Team.class);
+        team.setId(id);
+        Team updatedTeam = teamDAO.update(team);
+        if (updatedTeam != null) {
+            teamCache.put(id, LocalDateTime.now());
+            ctx.header("Last-Modified", LocalDateTime.now().toString());
+            ctx.json(updatedTeam);
+        } else {
+            ctx.status(404).json(Map.of("message", "Team not found"));
+        }
     }
 
-    int id = Integer.parseInt(userId);
-
-    // Vérifier si l'utilisateur est membre de l'équipe
-    if (!userDAO.belongsToTeam(id, teamId)) {
-      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
-      return;
+    /**
+     * Delete a team
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}", methods = HttpMethod.DELETE, operationId = "deleteTeam", summary = "Delete team by ID", description = "Deletes a team by its ID.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = UUID.class), responses = {
+            @OpenApiResponse(status = "200", description = "Team deleted successfully"),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    @Override
+    public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        if (teamDAO.delete(id)) {
+            teamCache.remove(id);
+            ctx.status(204);
+        } else {
+            ctx.status(404).json(Map.of("message", "Team not found"));
+        }
     }
 
-    // Retirer l'utilisateur de l'équipe
-    userDAO.leaveTeam(id, teamId);
+    /**
+     * Join a team (for a user)
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}/join", methods = HttpMethod.POST, operationId = "joinTeam", summary = "Join a team", description = "Allows a user to join a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), headers = {
+            @OpenApiParam(name = "X-User-ID", required = true, type = UUID.class, example = "1"),
+    }, responses = {
+            @OpenApiResponse(status = "200", description = "User joined the team successfully"),
+            @OpenApiResponse(status = "400", description = "User is already a member of the team"),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    public void join(Context ctx) throws ClassNotFoundException, SQLException, IOException {
 
-    ctx.status(200).json(Map.of("message", "User left the team successfully"));
-  }
+        String header = ctx.header("X-User-ID");
+        int teamId = Integer.parseInt(ctx.pathParam("id"));
+        int userId = Integer.parseInt(header);
+        if (header == null || !StringHelper.isInteger(header)) {
+            ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+            return;
+        }
 
-  /**
-   * Get all the members of a team
-   * @param ctx: context to use
-   * @throws Exception
-   */
-  @OpenApi(path = "/teams/{id}/users", methods = HttpMethod.GET, operationId = "getTeamMembers", summary = "Get users of a team", description = "Returns a list of users belonging to the specified team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-      @OpenApiResponse(status = "200", description = "List of users in the team", content = @OpenApiContent(from = User[].class)),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void getTeamMembers(Context ctx) throws Exception {
-    int teamId = Integer.parseInt(ctx.pathParam("id"));
+        // Vérifier si l'utilisateur est déjà membre de l'équipe
+        if (userDAO.belongsToTeam(userId, teamId)) {
+            ctx.status(400).json(Map.of("message", "User is already a member of the team"));
+            return;
+        }
 
-    // Vérifier si l'équipe existe
-    Team team = teamDAO.findById(teamId);
-    if (team == null) {
-      ctx.status(404).json(Map.of("message", "Team not found"));
-      return;
-    }
-    // Récupérer les utilisateurs de l'équipe
-    List<User> users = teamDAO.getTeamMembers(teamId);
-    ctx.json(users);
-  }
+        userDAO.joinTeam(userId, teamId);
 
-  /**
-   * For the current connected user to become a manager
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.POST, operationId = "becomeManager", summary = "Become manager", description = "Let a member become manager", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-      @OpenApiResponse(status = "200", description = "User left the team successfully"),
-      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void becomeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int teamId = Integer.parseInt(ctx.pathParam("id"));
-    String userId = ctx.header("X-User-ID");
-    if (userId == null || !StringHelper.isInteger(userId)) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+        ctx.status(200).json(Map.of("message", "User joined the team successfully"));
     }
 
-    int id = Integer.parseInt(userId);
+    /**
+     * Leave a team
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}/leave", methods = HttpMethod.POST, operationId = "leaveTeam", summary = "Leave a team", description = "Allows a user to leave a team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+            @OpenApiResponse(status = "200", description = "User left the team successfully"),
+            @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    public void leave(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        int teamId = Integer.parseInt(ctx.pathParam("id"));
+        String userId = ctx.header("X-User-ID");
+        if (userId == null || !StringHelper.isInteger(userId)) {
+            ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+            return;
+        }
 
-    if (!userDAO.belongsToTeam(id, teamId)) {
-      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
-      return;
+        int id = Integer.parseInt(userId);
+
+        // Vérifier si l'utilisateur est membre de l'équipe
+        if (!userDAO.belongsToTeam(id, teamId)) {
+            ctx.status(400).json(Map.of("message", "User is not a member of the team"));
+            return;
+        }
+
+        // Retirer l'utilisateur de l'équipe
+        userDAO.leaveTeam(id, teamId);
+
+        ctx.status(200).json(Map.of("message", "User left the team successfully"));
     }
 
-    teamDAO.addManager(id, teamId);
+    /**
+     * Get all the members of a team
+     *
+     * @param ctx: context to use
+     * @throws Exception
+     */
+    @OpenApi(path = "/teams/{id}/users", methods = HttpMethod.GET, operationId = "getTeamMembers", summary = "Get users of a team", description = "Returns a list of users belonging to the specified team.", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+            @OpenApiResponse(status = "200", description = "List of users in the team", content = @OpenApiContent(from = User[].class)),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    public void getTeamMembers(Context ctx) throws Exception {
+        int teamId = Integer.parseInt(ctx.pathParam("id"));
 
-    ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
-  }
-
-  /**
-   * Remove the manager of a team
-   * @param ctx: context to use
-   * @throws ClassNotFoundException
-   * @throws SQLException
-   * @throws IOException
-   */
-  @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.DELETE, operationId = "removeManager", summary = "Remove manager", description = "Let a manager become a member", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
-      @OpenApiResponse(status = "200", description = "User left the team successfully"),
-      @OpenApiResponse(status = "400", description = "User is not a member of the team"),
-      @OpenApiResponse(status = "404", description = "Team not found"),
-      @OpenApiResponse(status = "500", description = "Internal Server Error")
-  })
-  public void removeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
-    int teamId = Integer.parseInt(ctx.pathParam("id"));
-    String userId = ctx.header("X-User-ID");
-    if (userId == null || !StringHelper.isInteger(userId)) {
-      ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
-      return;
+        // Vérifier si l'équipe existe
+        Team team = teamDAO.findById(teamId);
+        if (team == null) {
+            ctx.status(404).json(Map.of("message", "Team not found"));
+            return;
+        }
+        // Récupérer les utilisateurs de l'équipe
+        List<User> users = teamDAO.getTeamMembers(teamId);
+        ctx.json(users);
     }
 
-    int id = Integer.parseInt(userId);
+    /**
+     * For the current connected user to become a manager
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.POST, operationId = "becomeManager", summary = "Become manager", description = "Let a member become manager", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+            @OpenApiResponse(status = "200", description = "User left the team successfully"),
+            @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    public void becomeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        int teamId = Integer.parseInt(ctx.pathParam("id"));
+        String userId = ctx.header("X-User-ID");
+        if (userId == null || !StringHelper.isInteger(userId)) {
+            ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+            return;
+        }
 
-    User user = new UserDAO().findById(id);
-    if (user == null) {
-      ctx.status(404).json(Map.of("message", "User not found"));
-      return;
+        int id = Integer.parseInt(userId);
+
+        if (!userDAO.belongsToTeam(id, teamId)) {
+            ctx.status(400).json(Map.of("message", "User is not a member of the team"));
+            return;
+        }
+
+        teamDAO.addManager(id, teamId);
+
+        ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
     }
 
-    if (!userDAO.belongsToTeam(id, teamId)) {
-      ctx.status(400).json(Map.of("message", "User is not a member of the team"));
-      return;
+    /**
+     * Remove the manager of a team
+     *
+     * @param ctx: context to use
+     * @throws ClassNotFoundException
+     * @throws SQLException
+     * @throws IOException
+     */
+    @OpenApi(path = "/teams/{id}/manager", methods = HttpMethod.DELETE, operationId = "removeManager", summary = "Remove manager", description = "Let a manager become a member", tags = "Teams", pathParams = @OpenApiParam(name = "id", description = "Team ID", required = true, type = Integer.class), responses = {
+            @OpenApiResponse(status = "200", description = "User left the team successfully"),
+            @OpenApiResponse(status = "400", description = "User is not a member of the team"),
+            @OpenApiResponse(status = "404", description = "Team not found"),
+            @OpenApiResponse(status = "500", description = "Internal Server Error")
+    })
+    public void removeManager(Context ctx) throws ClassNotFoundException, SQLException, IOException {
+        int teamId = Integer.parseInt(ctx.pathParam("id"));
+        String userId = ctx.header("X-User-ID");
+        if (userId == null || !StringHelper.isInteger(userId)) {
+            ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+            return;
+        }
+
+        int id = Integer.parseInt(userId);
+
+        User user = new UserDAO().findById(id);
+        if (user == null) {
+            ctx.status(404).json(Map.of("message", "User not found"));
+            return;
+        }
+
+        if (!userDAO.belongsToTeam(id, teamId)) {
+            ctx.status(400).json(Map.of("message", "User is not a member of the team"));
+            return;
+        }
+
+        teamDAO.removeManager(teamId);
+
+        ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
     }
-
-    teamDAO.removeManager(teamId);
-
-    ctx.status(200).json(Map.of("message", "User become manager of the team successfully"));
-  }
 }

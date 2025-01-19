@@ -4,40 +4,41 @@ package ch.heigvd.bdr.models;
  * Stores all the data to link a task with a material need
  */
 public class TaskMaterialNeed {
-  private int taskId;
-  private Material materialNeedType;
-  private int quantity;
+    private int taskId;
+    private Material materialNeedType;
+    private int quantity;
 
-  public TaskMaterialNeed() {}
-  
-  public TaskMaterialNeed(int taskId, Material materialNeedType, int quantity) {
-    this.taskId = taskId;
-    this.materialNeedType = materialNeedType;
-    this.quantity = quantity;
-  }
+    public TaskMaterialNeed() {
+    }
 
-  // Getters and setters
-  public int getTaskId() {
-    return taskId;
-  }
+    public TaskMaterialNeed(int taskId, Material materialNeedType, int quantity) {
+        this.taskId = taskId;
+        this.materialNeedType = materialNeedType;
+        this.quantity = quantity;
+    }
 
-  public void setTaskId(int taskId) {
-    this.taskId = taskId;
-  }
+    // Getters and setters
+    public int getTaskId() {
+        return taskId;
+    }
 
-  public Material getMaterialNeedType() {
-    return materialNeedType;
-  }
+    public void setTaskId(int taskId) {
+        this.taskId = taskId;
+    }
 
-  public void setMaterialNeedType(Material materialNeedType) {
-    this.materialNeedType = materialNeedType;
-  }
+    public Material getMaterialNeedType() {
+        return materialNeedType;
+    }
 
-  public int getQuantity() {
-    return quantity;
-  }
+    public void setMaterialNeedType(Material materialNeedType) {
+        this.materialNeedType = materialNeedType;
+    }
 
-  public void setQuantity(int quantity) {
-    this.quantity = quantity;
-  }
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 }

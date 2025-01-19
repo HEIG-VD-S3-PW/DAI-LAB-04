@@ -4,25 +4,25 @@ package ch.heigvd.bdr.models;
  * Stores all the data related a task's material needs
  */
 public class MaterialNeed {
-  private Material type;
-  private int quantity;
+    private Material type;
+    private int quantity;
 
-  public MaterialNeed() {
-  }
+    public MaterialNeed() {
+    }
 
-  public MaterialNeed(Material type, int quantity) {
-    this.type = type;
-    this.quantity = quantity;
-  }
+    public MaterialNeed(Material type, int quantity) {
+        this.type = type;
+        this.quantity = quantity;
+    }
 
-  // Getters and setters
-  public Material getType() {
-    return type;
-  }
+    // Getters and setters
+    public Material getType() {
+        return type;
+    }
 
-  public void setType(Material type) {
-    this.type = type;
-  }
+    public void setType(Material type) {
+        this.type = type;
+    }
 
     public int getQuantity() {
         return quantity;
@@ -32,12 +32,12 @@ public class MaterialNeed {
         this.quantity = quantity;
     }
 
-  public static Material fromInt(int i) {
-    for (Material material : Material.values()) {
-      if (material.getValue() == i) {
-        return material;
-      }
+    public static Material fromInt(int i) {
+        for (Material material : Material.values()) {
+            if (material.getValue() == i) {
+                return material;
+            }
+        }
+        throw new IllegalArgumentException("Unexpected value: " + i);
     }
-    throw new IllegalArgumentException("Unexpected value: " + i);
-  }
 }
