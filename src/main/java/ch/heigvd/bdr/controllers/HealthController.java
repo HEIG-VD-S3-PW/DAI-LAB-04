@@ -8,7 +8,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
-import ch.heigvd.bdr.DatabaseUtil;
+import ch.heigvd.bdr.misc.DatabaseUtil;
 
 /**
  * Checks if the database and the API are working properly
