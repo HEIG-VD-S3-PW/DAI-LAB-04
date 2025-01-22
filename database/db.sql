@@ -208,11 +208,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create the trigger
 CREATE TRIGGER prevent_circular_dependencies
     BEFORE INSERT OR UPDATE ON "Task_Subtask"
     FOR EACH ROW
     EXECUTE FUNCTION check_circular_dependencies();
+
 
 CREATE OR REPLACE FUNCTION check_dependencies_on_task_done()
 RETURNS TRIGGER AS $$
@@ -220,31 +220,44 @@ DECLARE
 pending_required_dependencies BOOLEAN := FALSE;
 BEGIN
     -- Vérifier si des dépendances requises ne sont pas terminées
-WITH RECURSIVE TaskDependencies AS (
-    -- Départ : dépendances directes de la tâche
-    SELECT ts.subtaskId
-    FROM "Task_Subtask" ts
-    WHERE ts.taskId = NEW.id AND ts.required IS TRUE
-
-    UNION ALL
-
-    -- Récursion : dépendances indirectes
-    SELECT ts.subtaskId
-    FROM "Task_Subtask" ts
-             INNER JOIN TaskDependencies td ON ts.taskId = td.subtaskId
-    WHERE ts.required IS TRUE
-)
-SELECT EXISTS(
-    SELECT 1
-    FROM TaskDependencies td
-             INNER JOIN "Task" t ON td.subtaskId = t.id
-    WHERE t.done IS NOT TRUE
-) INTO pending_required_dependencies;
-
--- Si des dépendances ne sont pas terminées, lever une exception
-IF pending_required_dependencies THEN
-        RAISE EXCEPTION 'Cannot mark task as done: dependencies still not done.';
-END IF;
+	WITH RECURSIVE TaskDependencies AS (
+	    -- Départ : dépendances directes de la tâche
+	    SELECT ts.subtaskId
+	    FROM "Task_Subtask" ts
+	    WHERE ts.taskId = NEW.id AND ts.required IS TRUE
+	
+	    UNION ALL
+	
+	    -- Récursion : dépendances indirectes
+	    SELECT ts.subtaskId
+	    FROM "Task_Subtask" ts
+	             INNER JOIN TaskDependencies td ON ts.taskId = td.subtaskId
+	    WHERE ts.required IS TRUE
+	)
+	SELECT EXISTS(
+	    SELECT 1
+	    FROM TaskDependencies td
+	             INNER JOIN "Task" t ON td.subtaskId = t.id
+	    WHERE t.done IS NOT TRUE
+	) INTO pending_required_dependencies;
+	
+	-- Empêche de mettre une task "undone" si elle est la dépendance d'une tâche terminée
+	
+	IF (OLD.done = TRUE AND NEW.done = FALSE) THEN
+	    IF EXISTS (
+	        SELECT 1
+	        FROM "Task_Subtask" ts
+	        INNER JOIN "Task" t ON t.id = ts.taskId
+	        WHERE ts.subtaskId = NEW.id AND t.done = TRUE
+	    ) THEN
+	        RAISE EXCEPTION 'Cannot mark the task undone, its parent task is already done.';
+	    END IF;
+	END IF;
+	
+	-- Si des dépendances ne sont pas terminées, lever une exception
+	IF pending_required_dependencies THEN
+	        RAISE EXCEPTION 'Cannot mark task as done: dependencies still not done.';
+	END IF;
 
 RETURN NEW;
 END;
