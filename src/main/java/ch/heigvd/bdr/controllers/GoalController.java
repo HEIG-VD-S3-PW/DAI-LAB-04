@@ -97,11 +97,16 @@ public class GoalController implements ResourceControllerInterface {
                     @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted creation timestamp")
             }),
             @OpenApiResponse(status = "400", description = "Bad request"),
+            @OpenApiResponse(status = "403", description = "Forbidden"),
             @OpenApiResponse(status = "500", description = "Internal Server Error")
     })
     @Override
     public void create(Context ctx) throws ClassNotFoundException, SQLException, IOException {
         Goal goal = ctx.bodyAsClass(Goal.class);
+        if(!checkUserRights(ctx, goal)){
+            return;
+        }
+
         goalCache.put(goal.getId(), LocalDateTime.now());
         ctx.header("Last-Modified", LocalDateTime.now().toString());
         ctx.status(201).json(goalDAO.create(goal));
@@ -127,6 +132,7 @@ public class GoalController implements ResourceControllerInterface {
             }),
             @OpenApiResponse(status = "304", description = "Goal not modified since If-Modified-Since timestamp"),
             @OpenApiResponse(status = "400", description = "Invalid If-Modified-Since header format"),
+            @OpenApiResponse(status = "403", description = "Forbidden"),
             @OpenApiResponse(status = "404", description = "Goal not found"),
             @OpenApiResponse(status = "500", description = "Internal Server Error")
     })
@@ -137,6 +143,10 @@ public class GoalController implements ResourceControllerInterface {
         UtilsController.checkModif(ctx, goalCache, id);
 
         Goal goal = goalDAO.findById(id);
+
+        if(!checkUserRights(ctx, goal)){
+            return;
+        }
 
         if (goal != null) {
             UtilsController.sendResponse(ctx, goalCache, goal.getId());
@@ -159,6 +169,7 @@ public class GoalController implements ResourceControllerInterface {
                     @OpenApiParam(name = "Last-Modified", description = "ISO-8601 formatted update timestamp")
             }),
             @OpenApiResponse(status = "400", description = "Bad request"),
+            @OpenApiResponse(status = "403", description = "Forbidden"),
             @OpenApiResponse(status = "404", description = "Goal not found"),
             @OpenApiResponse(status = "500", description = "Internal Server Error")
     })
@@ -166,6 +177,11 @@ public class GoalController implements ResourceControllerInterface {
     public void update(Context ctx) throws ClassNotFoundException, SQLException, IOException {
         int id = Integer.parseInt(ctx.pathParam("id"));
         Goal goal = ctx.bodyAsClass(Goal.class);
+
+        if(!checkUserRights(ctx, goal)){
+            return;
+        }
+
         goal.setId(id);
         Goal updatedGoal = goalDAO.update(goal);
         if (updatedGoal != null) {
@@ -187,17 +203,50 @@ public class GoalController implements ResourceControllerInterface {
      */
     @OpenApi(path = "/goals/{id}", methods = HttpMethod.DELETE, operationId = "deleteGoal", summary = "Delete goal by ID", description = "Deletes a goal by its ID and removes its entry from the cache.", tags = "Goals", pathParams = @OpenApiParam(name = "id", description = "Goal ID", required = true, type = UUID.class), responses = {
             @OpenApiResponse(status = "204", description = "Goal deleted successfully"),
+            @OpenApiResponse(status = "403", description = "Forbidden"),
             @OpenApiResponse(status = "404", description = "Goal not found"),
             @OpenApiResponse(status = "500", description = "Internal Server Error")
     })
     @Override
     public void delete(Context ctx) throws ClassNotFoundException, SQLException, IOException {
         int id = Integer.parseInt(ctx.pathParam("id"));
+        Goal goal = goalDAO.findById(id);
+
+        if(!checkUserRights(ctx, goal)){
+            return;
+        }
+
         if (goalDAO.delete(id)) {
             goalCache.remove(id);
             ctx.status(204);
         } else {
             ctx.status(404).json(Map.of("message", "Goal not found"));
         }
+    }
+
+    /**
+     * Check if an user belongs to the team that manages this goal
+     * @param ctx: Current context
+     * @param goal: Goal to create, show, update or delete
+     * @return: true if the user belongs to the good team
+     * @throws SQLException
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    public boolean checkUserRights(Context ctx, Goal goal) throws SQLException, IOException, ClassNotFoundException {
+        String userId = ctx.header("X-User-ID");
+        if (userId == null || !StringHelper.isInteger(userId)) {
+            ctx.status(400).json(Map.of("message", "Missing X-User-ID header"));
+            return false;
+        }
+
+        UserDAO userDAO = new UserDAO();
+
+        if(!userDAO.belongsToTeam(Integer.parseInt(userId), goal.getTeamId())){
+            ctx.status(403).result("Forbidden");
+            return false;
+        }
+
+        return true;
     }
 }
